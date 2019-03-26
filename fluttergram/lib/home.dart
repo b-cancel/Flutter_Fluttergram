@@ -1,52 +1,81 @@
 import 'package:flutter/material.dart';
+import 'package:fluttergram/main.dart';
+
 import 'posts.dart';
 import 'profile.dart';
 import 'new.dart';
 
 class Home extends StatefulWidget {
-  final Widget child;
-  Home({Key key, this.child}) : super(key: key);
+  final Data appData;
+  Home({
+    Key key, 
+    this.appData,
+  }) : super(key: key);
   _HomeState createState() => _HomeState();
 }
 
 class _HomeState extends State<Home> {
   int _selectedIndex = 0;
-  final _widgetOptions = [
-    Posts(),
-    Profile(),
-    NewPost(),
-  ];
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: new AppBar(
-        centerTitle: true,
-        title: new Text("Fluttergram"),
+    var _widgetOptions = [
+      Posts(),
+      NewPost(),
+      Profile(
+        appData: widget.appData,
       ),
+    ];
+
+    return Scaffold(
       body: Center(
         child: _widgetOptions.elementAt(_selectedIndex),
       ),
-      bottomNavigationBar: BottomNavigationBar(
-        type: BottomNavigationBarType.shifting,
-        currentIndex: _selectedIndex,
-        fixedColor: Colors.deepPurple,
-        onTap: _onItemTapped,
-        items: [
-         new BottomNavigationBarItem(
-           icon: Icon(Icons.home),
-           title: new Text("Posts"),
-         ),
-         new BottomNavigationBarItem(
-           icon: Icon(Icons.add_box),
-           title: new Text("New Post"),
-         ),
-         new BottomNavigationBarItem(
-           icon: Icon(Icons.person),
-           title: new Text("Profile")
-         )
-       ],
-     ),
+      bottomNavigationBar: new Container(
+        color: Colors.white,
+        height: 45.0,
+        alignment: Alignment.center,
+        child: BottomNavigationBar(
+          type: BottomNavigationBarType.fixed,
+          currentIndex: _selectedIndex,
+          onTap: _onItemTapped,
+          items: [
+            new BottomNavigationBarItem(
+              icon: Icon(
+                Icons.home,
+              ),
+              title: new Text(
+                "Home",
+                style: TextStyle(
+                  fontSize: 0,
+                ),
+              ),
+            ),
+            new BottomNavigationBarItem(
+              icon: Icon(
+                Icons.add_box,
+              ),
+              title: new Text(
+                "New Post",
+                style: TextStyle(
+                  fontSize: 0,
+                ),
+              ),
+            ),
+            new BottomNavigationBarItem(
+              icon: Icon(
+                Icons.account_box,
+              ),
+              title: new Text(
+                "Profile",
+                style: TextStyle(
+                  fontSize: 0,
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 
