@@ -3,9 +3,12 @@
 //CHUNK OF CODE TAKEN FROM:
 //https://slcoderlk.blogspot.com/2019/01/beautiful-user-profile-material-ui-with.html
 
+import 'dart:async';
+
 import 'package:async/async.dart';
 import 'package:flutter/material.dart';
 import 'package:fluttergram/main.dart';
+import 'package:fluttergram/postList.dart';
 
 import 'dart:convert';
 import 'dart:io';
@@ -104,6 +107,7 @@ class UserProfilePage extends StatefulWidget {
 
 class _UserProfilePageState extends State<UserProfilePage> {
   ValueNotifier<String> imageUrl;
+  ValueNotifier<bool> expandedField;
 
   TextStyle bioTextStyle = TextStyle(
     fontFamily: 'Spectral',
@@ -116,14 +120,24 @@ class _UserProfilePageState extends State<UserProfilePage> {
   @override
   void initState(){
     imageUrl = new ValueNotifier(widget.imageUrl);
+    expandedField = new ValueNotifier(false);
 
     bioNode.addListener((){
-      editing.value = bioNode.hasFocus;
+      bioNodeChange();
     });
 
+    //set the initial value of our text field
     bioController.text = widget.bio;
 
     super.initState();
+  }
+
+  Future<Null> refresh() {
+    Completer<Null> completer = new Completer<Null>();
+    new Timer(new Duration(seconds: 3), () {
+      completer.complete();
+    });
+    return completer.future;
   }
 
   @override
@@ -167,6 +181,7 @@ class _UserProfilePageState extends State<UserProfilePage> {
         child: ListView(
           children: <Widget>[
             Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
               children: <Widget>[
                 Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -246,18 +261,53 @@ class _UserProfilePageState extends State<UserProfilePage> {
                     )
                   ],
                 ),
-                Container(
-                  padding: EdgeInsets.only(left: 16.0, right: 16.0),
-                  child: TextFormField(
-                    focusNode: bioNode,
-                    controller: bioController,
-                    style: bioTextStyle,
-                    maxLines: 5,
-                    decoration: InputDecoration(
-                      border: InputBorder.none,
-                    ),
+                AnimatedBuilder(
+                  animation: expandedField,
+                  builder: (BuildContext context, Widget child) {
+                    return Column(
+                      children: <Widget>[
+                        ClipRect(
+                          child: Padding(
+                            padding: const EdgeInsets.only(left: 16, right: 16),
+                            child: TextFormField(
+                              focusNode: bioNode,
+                              controller: bioController,
+                              style: bioTextStyle,
+                              maxLines: (expandedField.value) ? 7 : 1,
+                              decoration: InputDecoration(
+                                border: InputBorder.none,
+                              ),
+                            ),
+                          ),
+                        ),
+                        GestureDetector(
+                          onTap:  () => fieldSizeToggle(),
+                          behavior: HitTestBehavior.opaque,
+                          child: Container(
+                            padding: EdgeInsets.only(right: 16),
+                            alignment: Alignment.bottomRight,
+                            child: new Text(
+                              (expandedField.value) ? "Show Less" : "Show More",
+                            ),
+                          ),
+                        ),
+                      ],
+                    );
+                  },
+                ),
+                RefreshIndicator(
+                  onRefresh: () => refresh(),
+                  child: Container(
+                    child: Column(
+                      children: <Widget>[
+                        Post(),
+                        Post(),
+                        Post(),
+                      ],
+                    )
                   ),
                 ),
+                //PostList(),
               ],
             ),
           ],
@@ -379,18 +429,69 @@ class _UserProfilePageState extends State<UserProfilePage> {
     }
   }
 
-  void editDoneButtonFunction(){
-    //save our value
-    if(bioNode.hasFocus) updateBio();
+  //-------------------------VERY DELICATE SYSTEM START-------------------------
 
-    print("has focus? " + bioNode.hasFocus.toString());
-
-    //focus on the right thing
-    var nodeToFocus;
-    if(bioNode.hasFocus) nodeToFocus = new FocusNode();
-    else nodeToFocus = bioNode;
-    FocusScope.of(context).requestFocus(nodeToFocus);
+  //USED BY:
+  //1. show less or show more
+  //2. clicking on the field ON OCCASION
+  void fieldSizeToggle(){
+    expandedField.value = !expandedField.value;
+    if(expandedField.value == false){
+      if(bioNode.hasFocus){
+        FocusScope.of(context).requestFocus(new FocusNode());
+      }
+    }
   }
+
+  //USED BY: only the bio node focus change listener
+  void bioNodeChange(){
+    //fieldSizeToggle()
+
+      /*
+      expandedField.value = !bioNode.hasFocus;
+
+      //save our value
+      if(bioNode.hasFocus) updateBio();
+
+      //focus on the right thing
+      var nodeToFocus;
+      if(bioNode.hasFocus) nodeToFocus = new FocusNode();
+      else nodeToFocus = bioNode;
+      FocusScope.of(context).requestFocus(nodeToFocus);
+        */
+
+      //we did not touch the edit button
+      if(editing.value == false){
+        //but we are still trying to focus
+        if(bioNode.hasFocus == true){
+          //we didn't want focus, simply to open or close
+          FocusScope.of(context).requestFocus(new FocusNode());
+          fieldSizeToggle(); //toggle field
+        }
+      }
+      else{
+
+      }
+
+      //editing.value = bioNode.hasFocus;
+  }
+
+  //USED BY: only the button
+  void editDoneButtonFunction(){
+    editing.value = !editing.value;
+    if(bioNode.hasFocus){
+      updateBio();
+      FocusScope.of(context).requestFocus(new FocusNode());
+    }
+    else{
+      FocusScope.of(context).requestFocus(bioNode);
+      if(expandedField.value == false){
+        expandedField.value = true;
+      }
+    }
+  }
+
+  //-------------------------VERY DELICATE SYSTEM END-------------------------
 }
 
 class ProfileData extends StatelessWidget {
