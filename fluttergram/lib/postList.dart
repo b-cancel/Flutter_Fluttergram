@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:io';
 
 import 'package:flutter/material.dart';
+import 'package:fluttergram/comments.dart';
 import 'package:fluttergram/main.dart';
 import 'package:fluttergram/profile.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
@@ -24,7 +25,7 @@ class PostList extends StatefulWidget {
 }
 
 class _PostListState extends State<PostList> {
-    final AsyncMemoizer _memoizer = AsyncMemoizer();
+  final AsyncMemoizer _memoizer = AsyncMemoizer();
 
   fetchData() {
     return this._memoizer.runOnce(() async {
@@ -53,7 +54,6 @@ class _PostListState extends State<PostList> {
         }
     });
   }
-
 
   @override
   Widget build(BuildContext context) {
@@ -140,6 +140,18 @@ class Post extends StatelessWidget {
   Widget build(BuildContext context) {
     var size = MediaQuery.of(context).size.width;
     var extractedEmail = (postOwnerEmail).split('@')[0];
+
+    void goToComments(postID){
+      print("going to comments for " + postID.toString());
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) => Comments(
+            appData: modForUser(appData, postID),
+          ),
+        ),
+      );
+    }
 
     return Column(
       mainAxisAlignment: MainAxisAlignment.start,
@@ -272,7 +284,10 @@ class Post extends StatelessWidget {
           padding: const EdgeInsets.symmetric(horizontal: 16.0),
           child: Text(
             "posted on " + timeStamp.toString(), 
-            style: TextStyle(color: Colors.grey),
+            style: TextStyle(
+              color: Colors.grey,
+              fontSize: 10,
+            ),
           ),
         ),
         Container(
@@ -285,10 +300,6 @@ class Post extends StatelessWidget {
 
   void like(postID, doWeLike){
     print("post " + postID.toString() + " will now be liked is " + doWeLike.toString());
-  }
-
-  void goToComments(postID){
-    print("going to comments for " + postID.toString());
   }
 
   Widget buildClickOrNoClick(BuildContext context) {
@@ -316,46 +327,6 @@ class Post extends StatelessWidget {
         ),
       );
     }
-  }
-}
-
-class PostComment extends StatelessWidget {
-  const PostComment({
-    Key key,
-  }) : super(key: key);
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(16.0, 16.0, 0.0, 8.0),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.start,
-        children: <Widget>[
-          new Container(
-            height: 40.0,
-            width: 40.0,
-            decoration: new BoxDecoration(
-              shape: BoxShape.circle,
-              image: new DecorationImage(
-                  fit: BoxFit.fill,
-                  image: new NetworkImage(
-                      "https://pbs.twimg.com/profile_images/916384996092448768/PF1TSFOE_400x400.jpg")),
-            ),
-          ),
-          new SizedBox(
-            width: 10.0,
-          ),
-          Expanded(
-            child: new TextField(
-              decoration: new InputDecoration(
-                border: InputBorder.none,
-                hintText: "Add a comment...",
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
   }
 }
 
