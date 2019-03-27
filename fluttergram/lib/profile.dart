@@ -69,6 +69,7 @@ class _ProfileState extends State<Profile> {
       builder: (BuildContext context, AsyncSnapshot snapshot) {
         if(snapshot.connectionState == ConnectionState.done){
           return UserProfilePage(
+            editable: true,
             appData: widget.appData,
             email: snapshot.data["email"],
             bio: snapshot.data["bio"],
@@ -87,6 +88,7 @@ class _ProfileState extends State<Profile> {
 //-------------------------VISUAL DATA DISPLAY-------------------------
 
 class UserProfilePage extends StatefulWidget {
+  final bool editable;
   final Data appData;
   final String email;
   final String imageUrl;
@@ -94,6 +96,7 @@ class UserProfilePage extends StatefulWidget {
   final String spawnTime;
 
   UserProfilePage({
+    this.editable,
     this.appData,
     this.email,
     this.imageUrl,
@@ -148,17 +151,19 @@ class _UserProfilePageState extends State<UserProfilePage> {
         child: AppBar(
           backgroundColor: new Color(0xfff8faf8),
           elevation: 1.0,
-          leading: Container(),
+          leading: (widget.editable) ? Container() : BackButton(),
           centerTitle: false,
           title: Transform.translate(
-            offset: Offset(-60, 0),
+            offset: Offset((widget.editable) ? -60 : 0, 0),
             child: Container(
               child: new Row(
                 mainAxisSize: MainAxisSize.min,
                 mainAxisAlignment: MainAxisAlignment.start,
                 children: <Widget>[
                   Padding(
-                    padding: const EdgeInsets.only(right: 4.0),
+                    padding: (widget.editable)
+                    ? EdgeInsets.only(right: 4.0)
+                    : EdgeInsets.all(0),
                     child: new Text(
                       (widget.email).split('@')[0],
                       style: TextStyle(
@@ -167,10 +172,12 @@ class _UserProfilePageState extends State<UserProfilePage> {
                       ),
                     ),
                   ),
-                  new Icon(
+                  (widget.editable == false) 
+                  ? Container()
+                  : new Icon(
                     FontAwesomeIcons.chevronDown,
                     size: 8,
-                  ),
+                  ) ,
                 ],
               ),
             ),
@@ -189,8 +196,8 @@ class _UserProfilePageState extends State<UserProfilePage> {
                     Container(
                       padding: EdgeInsets.all(16),
                       child: Container(
-                        height: 100,
-                        width: 100,
+                        height: (widget.editable) ? 100 : 75,
+                        width: (widget.editable) ? 100 : 75,
                         child: Stack(
                           children: <Widget>[
                             AnimatedBuilder(
@@ -211,28 +218,34 @@ class _UserProfilePageState extends State<UserProfilePage> {
                                 );
                               },
                             ),
-                            Align(
-                              alignment: Alignment.bottomRight,
-                              child: Container(
-                                decoration: BoxDecoration(
-                                  borderRadius: BorderRadius.circular(80.0),
-                                  color: Colors.blue,
-                                  border: Border.all(
-                                    color: Colors.blue,
-                                    width: 4.0,
+                            (widget.editable == false) 
+                            ? Container()
+                            : new Stack(
+                              children: <Widget>[
+                                Align(
+                                  alignment: Alignment.bottomRight,
+                                  child: Container(
+                                    decoration: BoxDecoration(
+                                      borderRadius: BorderRadius.circular(80.0),
+                                      color: Colors.blue,
+                                      border: Border.all(
+                                        color: Colors.blue,
+                                        width: 4.0,
+                                      ),
+                                    ),
+                                    child: Icon(
+                                      Icons.edit,
+                                      color: Colors.white,
+                                      size: 16,
+                                    ),
                                   ),
                                 ),
-                                child: Icon(
-                                  Icons.edit,
-                                  color: Colors.white,
-                                  size: 16,
+                                FlatButton(
+                                  shape: CircleBorder(),
+                                  onPressed: () => imagePicker(),
+                                  child: Container(),
                                 ),
-                              ),
-                            ),
-                            FlatButton(
-                              shape: CircleBorder(),
-                              onPressed: () => imagePicker(),
-                              child: Container(),
+                              ],
                             ),
                           ],
                         ),
@@ -247,7 +260,9 @@ class _UserProfilePageState extends State<UserProfilePage> {
                             comments: 35,
                             likes: 1283,
                           ),
-                          Padding(
+                          (widget.editable == false)
+                          ? Container()
+                          : Padding(
                             padding: const EdgeInsets.only(right: 16.0),
                             child: AnimatedBuilder(
                               animation: editing,
@@ -567,7 +582,7 @@ class ProfileData extends StatelessWidget {
     return Container(
       padding: EdgeInsets.only(top: 16, right: 16),
       child: new Row(
-        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+        mainAxisAlignment: MainAxisAlignment.spaceAround,
         children: <Widget>[
           Stat(number: posts.toString(), text: "Posts"),
           Stat(number: comments.toString(), text: "Comments"),
