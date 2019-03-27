@@ -7,17 +7,18 @@ import 'package:fluttergram/main.dart';
 import 'package:fluttergram/profile.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 
-import 'dart:async';
 import 'dart:convert';
 import 'package:async/async.dart';
 import 'package:http/http.dart' as http;
 
 class PostList extends StatefulWidget {
   final Data appData;
+  final Function callback;
 
   PostList({
     Key key,
     this.appData,
+    @required this.callback,
   }) : super(key: key);
 
   @override
@@ -86,7 +87,10 @@ class _PostListState extends State<PostList> {
               postOwnerImageUrl: list[index]["user_profile_image_url"],
               startLiked: list[index]["liked"],
               liked: new ValueNotifier(list[index]["liked"]),
-              callback: () => forceReload(),
+              callback: (){
+                widget.callback();
+                forceReload();
+              },
             ),
           );
         }

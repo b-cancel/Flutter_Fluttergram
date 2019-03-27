@@ -37,6 +37,8 @@ class Profile extends StatefulWidget {
 class _ProfileState extends State<Profile> {
   final AsyncMemoizer _memoizer = AsyncMemoizer();
 
+  bool forceFetch = false;
+
   fetchData() {
     return this._memoizer.runOnce(() async {
       return await getData();
@@ -58,6 +60,8 @@ class _ProfileState extends State<Profile> {
 
       //process data
       if(response.statusCode == 200){ 
+        forceFetch = false; //in case it was triggered by this
+
         return jsonDecode(response.body);
         //TODO... get the count of user posts... user likes... and user comments
       }
@@ -68,11 +72,17 @@ class _ProfileState extends State<Profile> {
     });
   }
 
+  void forceReload(){
+    print("force reloading profile");
+    forceFetch = true;
+    setState(() {});
+  }
+
   @override
   Widget build(BuildContext context) {
     //show loading in the meantime
     return FutureBuilder(
-      future: fetchData(),
+      future: (forceFetch) ? getData() : fetchData(),
       builder: (BuildContext context, AsyncSnapshot snapshot) {
         if(snapshot.connectionState == ConnectionState.done){
           return UserProfilePage(
@@ -83,7 +93,11 @@ class _ProfileState extends State<Profile> {
             bio: snapshot.data["bio"],
             imageUrl: snapshot.data["profile_image_url"],
             spawnTime: snapshot.data["created_at"],
-            callback: widget.callback,
+            callback: (){
+              forceReload(); //force reload profile
+              //IF this profile was called from a postList then we will reload that
+              widget.callback(); 
+            },
           );
         }
         else return CustomLoading();
@@ -131,6 +145,8 @@ class _UserProfilePageState extends State<UserProfilePage> {
 
   @override
   void initState(){
+    getPosts();
+
     imageUrl = new ValueNotifier(widget.imageUrl);
     expandedField = new ValueNotifier(false);
 
@@ -144,12 +160,97 @@ class _UserProfilePageState extends State<UserProfilePage> {
     super.initState();
   }
 
-  Future<Null> refresh() {
-    Completer<Null> completer = new Completer<Null>();
-    new Timer(new Duration(seconds: 3), () {
-      completer.complete();
+  bool forceFetch = false;
+
+  ValueNotifier<int> postCount = new ValueNotifier(0);
+  ValueNotifier<int> commentCount = new ValueNotifier(0);
+  ValueNotifier<int> likeCount = new ValueNotifier(0);
+
+  Future getPosts() async{
+    //get all the posts
+    var urlMod = widget.appData.url + "/api/v1/posts";
+
+    return await http.get(
+      urlMod, 
+      headers: {HttpHeaders.authorizationHeader: "Bearer " + widget.appData.token}
+    ).then((response) async{
+        if(response.statusCode == 200){
+          forceFetch = false; //in case we were triggered by this
+          
+          return await processPosts(jsonDecode(response.body));
+        }
+        else{ 
+          print(urlMod + " get posts fail");
+          //TODO... trigger some visual error
+        }
     });
-    return completer.future;
+  }
+
+  Future processPosts(posts) async{
+    List list = posts;
+    for(int postID = 0; postID < list.length; postID+=1){
+      //update postCount
+      if(list[postID]["user_id"] == widget.appData.whoOwnsPostsID){
+        postCount.value += 1;
+      }
+
+      //get all comments from this userID from this particular post
+      commentCount.value += await getComments(list[postID]["id"]);
+
+      //get all the likes from this userID from this particular post
+      likeCount.value += await getLikes(list[postID]["id"]);
+    }
+
+    //return so this thing stop running
+    return "";
+  }
+
+  Future getComments(thisPostID) async{
+    var urlMod = widget.appData.url + "/api/v1/posts/" + thisPostID.toString() + "/comments";
+
+    return await http.get(
+      urlMod, 
+      headers: {HttpHeaders.authorizationHeader: "Bearer " + widget.appData.token}
+    ).then((response) async{
+        if(response.statusCode == 200){
+          List comments = jsonDecode(response.body);
+          int commentCount = 0;
+          for(int commentID = 0; commentID < comments.length; commentID += 1){
+            if(comments[commentID]["user_id"] == widget.appData.whoOwnsPostsID){
+              commentCount += 1;
+            }
+          }
+          return commentCount;
+        }
+        else{ 
+          print(urlMod + " get comments fail");
+          //TODO... trigger some visual error
+        }
+    });
+  }
+
+  Future getLikes(thisPostID) async{
+    var urlMod = widget.appData.url + "/api/v1/posts/" + thisPostID.toString() + "/likes";
+
+    return await http.get(
+      urlMod, 
+      headers: {HttpHeaders.authorizationHeader: "Bearer " + widget.appData.token}
+    ).then((response) async{
+        if(response.statusCode == 200){
+          List likes = jsonDecode(response.body);
+          int likesCount = 0;
+          for(int likeID = 0; likeID < likes.length; likeID += 1){
+            if(likes[likeID]["user_id"] == widget.appData.whoOwnsPostsID){
+              likesCount += 1;
+            }
+          }
+          return likesCount;
+        }
+        else{ 
+          print(urlMod + " get like fail");
+          //TODO... trigger some visual error
+        }
+    });
   }
 
   @override
@@ -168,7 +269,7 @@ class _UserProfilePageState extends State<UserProfilePage> {
             tooltip: MaterialLocalizations.of(context).backButtonTooltip,
             onPressed: () {
               Navigator.maybePop(context).then((value){
-                widget.callback();
+                widget.callback(); //DOES NOT NEED TO REFRESH US (we are leaving)
               });
             }
           ),
@@ -245,12 +346,13 @@ class _UserProfilePageState extends State<UserProfilePage> {
                                 Align(
                                   alignment: Alignment.bottomRight,
                                   child: Container(
+                                    padding: EdgeInsets.all(4),
                                     decoration: BoxDecoration(
                                       borderRadius: BorderRadius.circular(80.0),
                                       color: Colors.blue,
                                       border: Border.all(
-                                        color: Colors.blue,
-                                        width: 4.0,
+                                        color: Colors.white,
+                                        width: 2,
                                       ),
                                     ),
                                     child: Icon(
@@ -275,12 +377,31 @@ class _UserProfilePageState extends State<UserProfilePage> {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.stretch,
                         children: <Widget>[
-                          new ProfileData(
-                            appData: widget.appData,
-                            userID: widget.appData.whoOwnsPostsID,
-                            posts: 12,
-                            comments: 35,
-                            likes: 1283,
+                          Padding(
+                            padding: EdgeInsets.only(top: 16, right: 16),
+                            child: AnimatedBuilder(
+                              animation: postCount,
+                              builder: (BuildContext context, Widget child) {
+                                return AnimatedBuilder(
+                                  animation: commentCount,
+                                  builder: (BuildContext context, Widget child) {
+                                    return AnimatedBuilder(
+                                      animation: likeCount,
+                                      builder: (BuildContext context, Widget child) {
+                                        return new Row(
+                                          mainAxisAlignment: MainAxisAlignment.spaceAround,
+                                          children: <Widget>[
+                                            Stat(number: postCount.value.toString(), text: "Posts"),
+                                            Stat(number: commentCount.value.toString(), text: "Comments"),
+                                            Stat(number: likeCount.value.toString(), text: "Likes"),
+                                          ],
+                                        );
+                                      },
+                                    );
+                                  },
+                                );
+                              },
+                            ),
                           ),
                           (widget.editable == false)
                           ? Container()
@@ -334,6 +455,11 @@ class _UserProfilePageState extends State<UserProfilePage> {
                 ),
                 PostList(
                   appData: widget.appData,
+                  //NOTE: MIGHT NEED TO refresh us IF we go to comments section
+                  callback: (){
+                    widget.callback();
+                    //TODO... refresh Stats
+                  },
                 ),
               ],
             ),
@@ -573,163 +699,7 @@ class _UserProfilePageState extends State<UserProfilePage> {
       }
     }
   }
-
   //-------------------------VERY DELICATE SYSTEM END-------------------------
-}
-
-class ProfileData extends StatefulWidget {
-  final Data appData;
-  final int userID;
-  final int posts;
-  final int comments;
-  final int likes;
-
-  const ProfileData({
-    @required this.appData,
-    @required this.userID,
-    this.posts,
-    this.comments,
-    this.likes,
-    Key key,
-  }) : super(key: key);
-
-  @override
-  _ProfileDataState createState() => _ProfileDataState();
-}
-
-class _ProfileDataState extends State<ProfileData> {
-  final AsyncMemoizer _memoizer = AsyncMemoizer();
-
-  fetchData() {
-    return this._memoizer.runOnce(() async {
-      return await getData();
-    });
-  }
-
-  Future getData() async{
-    //get all the posts
-    var urlMod = widget.appData.url + "/api/v1/posts";
-
-    return await http.get(
-      urlMod, 
-      headers: {HttpHeaders.authorizationHeader: "Bearer " + widget.appData.token}
-    ).then((response) async{
-        if(response.statusCode == 200){
-          return await processPosts(jsonDecode(response.body));
-        }
-        else{ 
-          print(urlMod + " get posts fail");
-          //TODO... trigger some visual error
-        }
-    });
-  }
-
-  ValueNotifier<int> postCount = new ValueNotifier(0);
-  ValueNotifier<int> commentCount = new ValueNotifier(0);
-  ValueNotifier<int> likeCount = new ValueNotifier(0);
-
-  Future processPosts(posts) async{
-    List list = posts;
-    for(int postID = 0; postID < list.length; postID+=1){
-      //update postCount
-      if(list[postID]["user_id"] == widget.userID){
-        postCount.value += 1;
-      }
-
-      //get all comments from this userID from this particular post
-      commentCount.value += await getComments(list[postID]["id"]);
-
-      //get all the likes from this userID from this particular post
-      likeCount.value += await getLikes(list[postID]["id"]);
-    }
-
-    //return so this thing stop running
-    return "";
-  }
-
-  Future getComments(thisPostID) async{
-    var urlMod = widget.appData.url + "/api/v1/posts/" + thisPostID.toString() + "/comments";
-
-    return await http.get(
-      urlMod, 
-      headers: {HttpHeaders.authorizationHeader: "Bearer " + widget.appData.token}
-    ).then((response) async{
-        if(response.statusCode == 200){
-          List comments = jsonDecode(response.body);
-          int commentCount = 0;
-          for(int commentID = 0; commentID < comments.length; commentID += 1){
-            if(comments[commentID]["user_id"] == widget.userID){
-              commentCount += 1;
-            }
-          }
-          return commentCount;
-        }
-        else{ 
-          print(urlMod + " get comments fail");
-          //TODO... trigger some visual error
-        }
-    });
-  }
-
-  Future getLikes(thisPostID) async{
-    var urlMod = widget.appData.url + "/api/v1/posts/" + thisPostID.toString() + "/likes";
-
-    return await http.get(
-      urlMod, 
-      headers: {HttpHeaders.authorizationHeader: "Bearer " + widget.appData.token}
-    ).then((response) async{
-        if(response.statusCode == 200){
-          List likes = jsonDecode(response.body);
-          int likesCount = 0;
-          for(int likeID = 0; likeID < likes.length; likeID += 1){
-            if(likes[likeID]["user_id"] == widget.userID){
-              likesCount += 1;
-            }
-          }
-          return likesCount;
-        }
-        else{ 
-          print(urlMod + " get like fail");
-          //TODO... trigger some visual error
-        }
-    });
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: EdgeInsets.only(top: 16, right: 16),
-      child: FutureBuilder(
-        future: fetchData(),
-        builder: (BuildContext context, AsyncSnapshot snapshot) {
-          //NOTE: using animated builders here updates the values as they are updated by the server
-          return AnimatedBuilder(
-            animation: postCount,
-            builder: (BuildContext context, Widget child) {
-              return AnimatedBuilder(
-                animation: commentCount,
-                builder: (BuildContext context, Widget child) {
-                  return AnimatedBuilder(
-                    animation: likeCount,
-                    builder: (BuildContext context, Widget child) {
-                      return new Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceAround,
-                        children: <Widget>[
-                          Stat(number: postCount.value.toString(), text: "Posts"),
-                          Stat(number: commentCount.value.toString(), text: "Comments"),
-                          Stat(number: likeCount.value.toString(), text: "Likes"),
-                        ],
-                      );
-                    },
-                  );
-                },
-              );
-            },
-          );
-        },
-      ),
-    );
-  }
 }
 
 class Stat extends StatelessWidget {
