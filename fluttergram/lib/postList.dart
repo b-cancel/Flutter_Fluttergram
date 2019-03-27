@@ -25,6 +25,11 @@ class PostList extends StatelessWidget {
 }
 
 class Post extends StatelessWidget {
+  final showOptions = false;
+  final showComent = false;
+  final showShare = false;
+  final showBookmark = false;
+
   @override
   Widget build(BuildContext context) {
     return Column(
@@ -61,10 +66,12 @@ class Post extends StatelessWidget {
                   )
                 ],
               ),
-              new IconButton(
+              (showOptions)
+              ? new IconButton(
                 icon: Icon(Icons.more_vert),
                 onPressed: null,
               )
+              : Container()
             ],
           ),
         ),
@@ -86,19 +93,37 @@ class Post extends StatelessWidget {
                   new Icon(
                     FontAwesomeIcons.heart,
                   ),
-                  new SizedBox(
-                    width: 16.0,
-                  ),
-                  new Icon(
-                    FontAwesomeIcons.comment,
-                  ),
-                  new SizedBox(
-                    width: 16.0,
-                  ),
-                  new Icon(FontAwesomeIcons.paperPlane),
+                  (showComent)
+                  ? Row(
+                    children: <Widget>[
+                      new SizedBox(
+                        width: 16.0,
+                      ),
+                      new Icon(
+                        FontAwesomeIcons.comment,
+                      ),
+                    ],
+                  )
+                  : Container(),
+                  (showShare)
+                  ? Row(
+                    children: <Widget>[
+                      new SizedBox(
+                        width: 16.0,
+                      ),
+                      new Icon(
+                        FontAwesomeIcons.paperPlane,
+                      ),
+                    ],
+                  )
+                  : Container(),
                 ],
               ),
-              new Icon(FontAwesomeIcons.bookmark)
+              (showBookmark)
+              ? new Icon(
+                FontAwesomeIcons.bookmark,
+              )
+              : Container(),
             ],
           ),
         ),

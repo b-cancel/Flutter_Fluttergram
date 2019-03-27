@@ -11,6 +11,8 @@ void main() => runApp(MyApp());
 class Data {
   String url = "https://serene-beach-48273.herokuapp.com";
   String token = "";
+  int currentUserID;
+  int whoOwnsPostsID;
 }
 
 class MyApp extends StatelessWidget {
@@ -19,7 +21,7 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return new MaterialApp(
-      title: 'Instagram',
+      title: 'Fluttergram',
       debugShowCheckedModeBanner: false,
       theme: new ThemeData(
           primarySwatch: Colors.blue,
@@ -137,41 +139,123 @@ class _LoginPageState extends State<LoginPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: Center(
-        child: Padding(
-          padding: const EdgeInsets.all(16.0),
+      body: Container(
+        padding: EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          gradient: LinearGradient( 
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [
+              const Color.fromRGBO(145, 85, 179, 1), 
+              const Color.fromRGBO(198, 55, 102, 1),
+            ], 
+            tileMode: TileMode.repeated,
+          ),
+        ),
+        child: Center(
           child: AnimatedBuilder(
             animation: login,
             builder: (context, child){
               return new Column(
                 mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: <Widget>[
-                  new Text(title()),
-                  new TextFormField(
-                    autofocus: true,
-                    controller: username,
-                    decoration: InputDecoration(
-                      labelText: "Username",
-                      hintText: "Your Username Here"
+                  Container(
+                    padding: EdgeInsets.all(16),
+                    alignment: Alignment.center,
+                    child: new Text(
+                      "Fluttergram",
+                      style: TextStyle(
+                        fontSize: 32,
+                        color: Colors.white,
+                      ),
                     ),
                   ),
-                  new TextFormField(
-                    obscureText: true,
-                    controller: password,
-                    decoration: InputDecoration(
-                      labelText: "Password",
-                      hintText: "Your Password Here"
+                  Container(
+                    color: Color.fromARGB(255, 175, 80, 150), 
+                    padding: EdgeInsets.all(4),
+                    child: new TextFormField(
+                      style: TextStyle(
+                        color: Colors.white,
+                      ),
+                      cursorColor: Colors.white,
+                      autofocus: true,
+                      keyboardType: TextInputType.emailAddress,
+                      controller: username,
+                      decoration: InputDecoration(
+                        border: InputBorder.none,
+                        hintText: "Username",
+                        hintStyle: TextStyle(
+                          color: Colors.white,
+                        ),
+                      ),
                     ),
                   ),
-                  new FlatButton(
-                    onPressed: () => login.value = !login.value,
-                    child: new Text(question()),
+                  Container(
+                    height: 16,
+                    child: Container(),
                   ),
-                  new RaisedButton(
+                  Container(
+                    color: Color.fromARGB(255, 175, 80, 150), 
+                    padding: EdgeInsets.all(4),
+                    child: new TextFormField(
+                      style: TextStyle(
+                        color: Colors.white,
+                      ),
+                      cursorColor: Colors.white,
+                      obscureText: true,
+                      controller: password,
+                      decoration: InputDecoration(
+                        border: InputBorder.none,
+                        hintText: "Password",
+                        hintStyle: TextStyle(
+                          color: Colors.white,
+                        ),
+                      ),
+                    ),
+                  ),
+                  new OutlineButton(
+                    borderSide: BorderSide(
+                      color: Colors.white, 
+                    ),
                     onPressed: submitAction,
-                    child: new Text(action()),
+                    child: new Text(
+                      action(),
+                      style: TextStyle(
+                        color: Colors.white,
+                      ),
+                    ),
                   )
                 ],
+              );
+            },
+          ),
+        ),
+      ),
+      bottomNavigationBar: BottomAppBar(
+        child: Container(
+          decoration: BoxDecoration(
+            gradient: LinearGradient( 
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [
+                const Color.fromRGBO(165, 101, 136, 1), 
+                const Color.fromRGBO(203, 66, 105, 1),
+              ], 
+              tileMode: TileMode.repeated,
+            ),
+            border: Border(
+              top: BorderSide(
+                color: Color.fromRGBO(255, 255, 255, .75),
+              ),
+            ),
+          ),
+          child: AnimatedBuilder(
+            animation: login,
+            builder: (BuildContext context, Widget child) {
+              return new FlatButton(
+                onPressed: () => login.value = !login.value,
+                child: new Text(question()),
               );
             },
           ),
