@@ -624,33 +624,27 @@ class _ProfileDataState extends State<ProfileData> {
     });
   }
 
-  Future processPosts(posts) async{
-    int postCount = 0;
-    int commentCount = 0;
-    int likeCount = 0;
+  ValueNotifier<int> postCount = new ValueNotifier(0);
+  ValueNotifier<int> commentCount = new ValueNotifier(0);
+  ValueNotifier<int> likeCount = new ValueNotifier(0);
 
+  Future processPosts(posts) async{
     List list = posts;
     for(int postID = 0; postID < list.length; postID+=1){
       //update postCount
       if(list[postID]["user_id"] == widget.userID){
-        postCount += 1;
+        postCount.value += 1;
       }
 
       //get all comments from this userID from this particular post
-      int newCommentCount = await getComments(list[postID]["id"]);
-      commentCount += newCommentCount;
+      commentCount.value += await getComments(list[postID]["id"]);
 
       //get all the likes from this userID from this particular post
-      int newLikeCount = await getLikes(list[postID]["id"]);
-      likeCount += newLikeCount;
+      likeCount.value += await getLikes(list[postID]["id"]);
     }
 
-    //return our map
-    Map<String, int> map = new Map();
-    map.putIfAbsent("postCount", () => postCount);
-    map.putIfAbsent("commentCount", () => commentCount);
-    map.putIfAbsent("likeCount", () => likeCount);
-    return map;
+    //return so this thing stop running
+    return "";
   }
 
   Future getComments(thisPostID) async{
@@ -708,23 +702,29 @@ class _ProfileDataState extends State<ProfileData> {
       child: FutureBuilder(
         future: fetchData(),
         builder: (BuildContext context, AsyncSnapshot snapshot) {
-          int postCount = 0;
-          int commentCount = 0;
-          int likeCount = 0;
-          if(snapshot.connectionState == ConnectionState.done){
-            print("doney now boyo");
-            postCount = snapshot.data["postCount"];
-            commentCount = snapshot.data["commentCount"];
-            likeCount = snapshot.data["likeCount"];
-          }
-
-          return new Row(
-            mainAxisAlignment: MainAxisAlignment.spaceAround,
-            children: <Widget>[
-              Stat(number: postCount.toString(), text: "Posts"),
-              Stat(number: commentCount.toString(), text: "Comments"),
-              Stat(number: likeCount.toString(), text: "Likes"),
-            ],
+          //NOTE: using animated builders here updates the values as they are updated by the server
+          return AnimatedBuilder(
+            animation: postCount,
+            builder: (BuildContext context, Widget child) {
+              return AnimatedBuilder(
+                animation: commentCount,
+                builder: (BuildContext context, Widget child) {
+                  return AnimatedBuilder(
+                    animation: likeCount,
+                    builder: (BuildContext context, Widget child) {
+                      return new Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceAround,
+                        children: <Widget>[
+                          Stat(number: postCount.value.toString(), text: "Posts"),
+                          Stat(number: commentCount.value.toString(), text: "Comments"),
+                          Stat(number: likeCount.value.toString(), text: "Likes"),
+                        ],
+                      );
+                    },
+                  );
+                },
+              );
+            },
           );
         },
       ),
