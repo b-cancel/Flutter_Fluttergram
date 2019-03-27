@@ -31,6 +31,7 @@ class _HomeState extends State<Home> {
       NewPost(),
       Profile(
         appData: modForMyPosts(widget.appData),
+        callback: () => print("call back not needed, NO BACK BUTTON"),
       ),
     ];
 

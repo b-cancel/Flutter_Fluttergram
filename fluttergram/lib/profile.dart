@@ -23,10 +23,12 @@ Dio dio = new Dio();
 
 class Profile extends StatefulWidget {
   final Data appData;
+  final Function callback;
 
   Profile({
     Key key,
     this.appData,
+    @required this.callback,
   }) : super(key: key);
 
   _ProfileState createState() => _ProfileState();
@@ -80,23 +82,11 @@ class _ProfileState extends State<Profile> {
             email: snapshot.data["email"],
             bio: snapshot.data["bio"],
             imageUrl: snapshot.data["profile_image_url"],
-            spawnTime:snapshot.data["created_at"],
+            spawnTime: snapshot.data["created_at"],
+            callback: widget.callback,
           );
         }
-        else{
-          var size = MediaQuery.of(context).size.width;
-          return Container(
-            height: size,
-            width: size,
-            padding: EdgeInsets.all(32),
-            alignment: Alignment.topCenter,
-            child: Container(
-              height: size/2,
-              width: size/2,
-              child: CircularProgressIndicator(),
-            ),
-          );
-        }
+        else return CustomLoading();
       },
     );
   }
@@ -111,6 +101,7 @@ class UserProfilePage extends StatefulWidget {
   final String imageUrl;
   final String bio;
   final String spawnTime;
+  final Function callback;
 
   UserProfilePage({
     this.editable,
@@ -119,6 +110,7 @@ class UserProfilePage extends StatefulWidget {
     this.imageUrl,
     this.bio,
     this.spawnTime,
+    @required this.callback,
   });
 
   @override
@@ -168,7 +160,18 @@ class _UserProfilePageState extends State<UserProfilePage> {
         child: AppBar(
           backgroundColor: new Color(0xfff8faf8),
           elevation: 1.0,
-          leading: (widget.editable) ? Container() : BackButton(),
+          leading: (widget.editable) 
+          ? Container() 
+          : IconButton(
+            icon: const BackButtonIcon(),
+            color: Colors.black,
+            tooltip: MaterialLocalizations.of(context).backButtonTooltip,
+            onPressed: () {
+              Navigator.maybePop(context).then((value){
+                widget.callback();
+              });
+            }
+          ),
           centerTitle: false,
           title: Transform.translate(
             offset: Offset((widget.editable) ? -60 : 0, 0),

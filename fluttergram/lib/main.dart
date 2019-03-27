@@ -90,6 +90,8 @@ class _LoginPageState extends State<LoginPage> {
     var urlMod = widget.appData.url + "/api";
     urlMod += "/login" + "?username=" + username.text + "&password=" + password.text;  
 
+    print("get request on url " + urlMod);
+
     http.get(urlMod).then((response){
         //confirm valid response
         if(response.statusCode == 200){ 
@@ -275,6 +277,25 @@ class _LoginPageState extends State<LoginPage> {
               );
             },
           ),
+        ),
+      ),
+    );
+  }
+}
+
+class CustomLoading extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    double width = MediaQuery.of(context).size.width;
+    return Center(
+      child: Container(
+        width: width,
+        padding: EdgeInsets.all(32),
+        alignment: Alignment.center,
+        child: Container(
+          height: width/5,
+          width: width/5,
+          child: CircularProgressIndicator(),
         ),
       ),
     );

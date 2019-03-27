@@ -27,6 +27,8 @@ class PostList extends StatefulWidget {
 class _PostListState extends State<PostList> {
   final AsyncMemoizer _memoizer = AsyncMemoizer();
 
+  bool forceFetch = false;
+
   fetchData() {
     return this._memoizer.runOnce(() async {
       return await getData();
@@ -39,13 +41,12 @@ class _PostListState extends State<PostList> {
     if(widget.appData.whoOwnsPostsID == -1) urlMod += "/api/v1/posts";
     else urlMod += "/api/v1/users/" + widget.appData.whoOwnsPostsID.toString() + "/posts";
 
-    print("loading the posts for " + widget.appData.whoOwnsPostsID.toString());
-
     return await http.get(
       urlMod, 
       headers: {HttpHeaders.authorizationHeader: "Bearer " + widget.appData.token}
     ).then((response){
         if(response.statusCode == 200){
+          forceFetch = false; //in case this was triggered by it
           return jsonDecode(response.body);
         }
         else{ 
@@ -55,10 +56,16 @@ class _PostListState extends State<PostList> {
     });
   }
 
+  void forceReload(){
+    print("force reloading post list");
+    forceFetch = true;
+    setState(() {});
+  }
+
   @override
   Widget build(BuildContext context) {
     return FutureBuilder(
-      future: fetchData(),
+      future: (forceFetch) ? getData() : fetchData(),
       builder: (BuildContext context, AsyncSnapshot snapshot) {
         if(snapshot.connectionState == ConnectionState.done){
           List list = snapshot.data;
@@ -79,23 +86,11 @@ class _PostListState extends State<PostList> {
               postOwnerImageUrl: list[index]["user_profile_image_url"],
               startLiked: list[index]["liked"],
               liked: new ValueNotifier(list[index]["liked"]),
+              callback: () => forceReload(),
             ),
           );
         }
-        else{
-          var size = MediaQuery.of(context).size.width;
-          return Container(
-            height: size,
-            width: size,
-            padding: EdgeInsets.all(32),
-            alignment: Alignment.topCenter,
-            child: Container(
-              height: size/2,
-              width: size/2,
-              child: CircularProgressIndicator(),
-            ),
-          );
-        }
+        else return CustomLoading();
       },
     );
   }
@@ -119,6 +114,7 @@ class Post extends StatelessWidget {
   final String postOwnerImageUrl;
   final bool startLiked;
   final ValueNotifier liked;
+  final Function callback;
   Post({
     this.appData, //used to determine if we should have links to the other users
     this.postID,
@@ -132,6 +128,7 @@ class Post extends StatelessWidget {
     this.postOwnerImageUrl, //used to know who owns the post
     this.startLiked,
     this.liked,
+    @required this.callback,
   });
 
   Data modForUser(appData, id){
@@ -155,6 +152,7 @@ class Post extends StatelessWidget {
             postCaption: caption,
             postTimeStamp: timeStamp,
             appData: appData,
+            callback: callback,
           ),
         ),
       );
@@ -384,6 +382,7 @@ class Post extends StatelessWidget {
             MaterialPageRoute(
               builder: (context) => Profile(
                 appData: modForUser(appData, postOwnerID),
+                callback: callback,
               ),
             ),
           );

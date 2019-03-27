@@ -6,7 +6,6 @@ import 'package:fluttergram/main.dart';
 import 'package:fluttergram/profile.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 
-import 'dart:async';
 import 'dart:convert';
 import 'package:async/async.dart';
 import 'package:http/http.dart' as http;
@@ -18,6 +17,7 @@ class Comments extends StatefulWidget {
   final String postOwnerEmail;
   final String postCaption;
   final String postTimeStamp;
+  final Function callback;
 
   Comments({
     Key key,
@@ -27,6 +27,7 @@ class Comments extends StatefulWidget {
     this.postOwnerEmail,
     this.postCaption,
     this.postTimeStamp,
+    @required this.callback,
   }) : super(key: key);
 
   _CommentsState createState() => _CommentsState();
@@ -126,6 +127,16 @@ class _CommentsState extends State<Comments> {
       appBar: PreferredSize(
         preferredSize: Size.fromHeight(45),
         child: AppBar(
+          leading: IconButton(
+            icon: const BackButtonIcon(),
+            color: Colors.black,
+            tooltip: MaterialLocalizations.of(context).backButtonTooltip,
+            onPressed: () {
+              Navigator.maybePop(context).then((value){
+                widget.callback();
+              });
+            }
+          ),
           backgroundColor: new Color(0xfff8faf8),
           elevation: 1.0,
           centerTitle: false,
@@ -176,20 +187,7 @@ class _CommentsState extends State<Comments> {
                   ],
                 );
               }
-              else{
-                var size = MediaQuery.of(context).size.width;
-                return Container(
-                  height: size,
-                  width: size,
-                  padding: EdgeInsets.all(32),
-                  alignment: Alignment.topCenter,
-                  child: Container(
-                    height: size/2,
-                    width: size/2,
-                    child: CircularProgressIndicator(),
-                  ),
-                );
-              }
+              else return CustomLoading();
             },
           ),
           Positioned(
