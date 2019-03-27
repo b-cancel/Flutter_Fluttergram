@@ -139,15 +139,19 @@ class Post extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     var size = MediaQuery.of(context).size.width;
-    var extractedEmail = (postOwnerEmail).split('@')[0];
 
-    void goToComments(postID){
+    void goToComments(){
       print("going to comments for " + postID.toString());
       Navigator.push(
         context,
         MaterialPageRoute(
           builder: (context) => Comments(
-            appData: modForUser(appData, postID),
+            postID: postID,
+            postOwnerImageUrl: postOwnerImageUrl, 
+            postOwnerEmail: postOwnerEmail, 
+            postCaption: caption,
+            postTimeStamp: timeStamp,
+            appData: appData,
           ),
         ),
       );
@@ -212,7 +216,7 @@ class Post extends StatelessWidget {
                         width: 16.0,
                       ),
                       GestureDetector(
-                        onTap: () => goToComments(postID),
+                        onTap: () => goToComments(),
                         child: new Icon(
                           FontAwesomeIcons.comment,
                         ),
@@ -254,7 +258,7 @@ class Post extends StatelessWidget {
             text: TextSpan(
               children: [
                 TextSpan(
-                  text: extractedEmail,
+                  text: (postOwnerEmail).split('@')[0],
                   style: TextStyle(
                     fontWeight: FontWeight.bold,
                     color: Colors.black,
@@ -271,7 +275,7 @@ class Post extends StatelessWidget {
         (commentCount == 0 || commentCount == null)
         ? Container()
         : GestureDetector(
-          onTap: () => goToComments(postID),
+          onTap: () => goToComments(),
           child: Padding(
             padding: const EdgeInsets.fromLTRB(16, 0, 16, 4),
             child: Text(

@@ -45,7 +45,6 @@ class _ProfileState extends State<Profile> {
     //retreive data from server
     var urlMod = widget.appData.url + "/api/v1/users/" + widget.appData.whoOwnsPostsID.toString();
 
-    print("user being inspected 1.2 " + widget.appData.whoOwnsPostsID.toString() + " & " + widget.appData.currentUserID.toString());
     var oldOwner = widget.appData.whoOwnsPostsID;
 
     return await http.get(
@@ -56,7 +55,6 @@ class _ProfileState extends State<Profile> {
       widget.appData.whoOwnsPostsID = oldOwner;
 
       //process data
-      print("user being inspected 1.3 " + widget.appData.whoOwnsPostsID.toString() + " & " + widget.appData.currentUserID.toString());
       if(response.statusCode == 200){ 
         return jsonDecode(response.body);
         //TODO... get the count of user posts... user likes... and user comments
@@ -275,6 +273,7 @@ class _UserProfilePageState extends State<UserProfilePage> {
                         crossAxisAlignment: CrossAxisAlignment.stretch,
                         children: <Widget>[
                           new ProfileData(
+                            userID: widget.appData.whoOwnsPostsID,
                             posts: 12,
                             comments: 35,
                             likes: 1283,
@@ -575,11 +574,13 @@ class _UserProfilePageState extends State<UserProfilePage> {
 }
 
 class ProfileData extends StatelessWidget {
+  final int userID;
   final int posts;
   final int comments;
   final int likes;
 
   const ProfileData({
+    @required this.userID,
     this.posts,
     this.comments,
     this.likes,

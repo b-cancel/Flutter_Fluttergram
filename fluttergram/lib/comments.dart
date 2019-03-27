@@ -14,11 +14,19 @@ import 'package:http/http.dart' as http;
 class Comments extends StatefulWidget {
   final Data appData;
   final int postID;
+  final String postOwnerImageUrl;
+  final String postOwnerEmail;
+  final String postCaption;
+  final String postTimeStamp;
 
   Comments({
     Key key,
     this.appData,
     this.postID,
+    this.postOwnerImageUrl,
+    this.postOwnerEmail,
+    this.postCaption,
+    this.postTimeStamp,
   }) : super(key: key);
 
   _CommentsState createState() => _CommentsState();
@@ -34,8 +42,69 @@ class _CommentsState extends State<Comments> {
   }
 
   Future getData() async{
-    //retreive data from server
+    //make url
     var urlMod = widget.appData.url + "/api/v1/posts/" + widget.postID.toString() + "/comments";
+
+    //get data from server
+    return await http.get(
+      urlMod, 
+      headers: {HttpHeaders.authorizationHeader: "Bearer " + widget.appData.token}
+    ).then((response){
+        if(response.statusCode == 200){
+          return jsonDecode(response.body);
+        }
+        else{ 
+          print(urlMod + " get comments fail");
+          //TODO... trigger some visual error
+        }
+    });
+
+    //turn off force fetch in case we where triggered because of it
+    forceFetch = false;
+  }
+
+  TextEditingController newCommentText = new TextEditingController();
+
+  void newComment(){
+    var comment = newCommentText.text;
+    if(comment != ""){
+      var urlMod = widget.appData.url + "/api/v1/posts/" 
+      + widget.postID.toString() + "/comments?text=" + comment;
+
+      http.post(
+        urlMod, 
+        headers: {HttpHeaders.authorizationHeader: "Bearer " + widget.appData.token}
+      ).then((response){
+          if(response.statusCode == 200){
+            //Submit Field
+            newCommentText.text = ""; 
+            FocusScope.of(context).requestFocus(new FocusNode());
+
+            //Fetch New Comment
+            forceFetch = true;
+            setState(() {}); //should trigger re-fetching of data
+          }
+          else{ 
+            print(urlMod + " post comment fail");
+            //TODO... trigger some visual error
+          }
+      });
+    }
+    //ELSE... we ignore your dumb request
+  }
+
+  bool forceFetch = false;
+
+  final AsyncMemoizer fetchImageMemoi = AsyncMemoizer();
+
+  fetchImageData() {
+    return this.fetchImageMemoi.runOnce(() async {
+      return await getImageData();
+    });
+  }
+
+  Future getImageData() async{
+    var urlMod = widget.appData.url + "/api/v1/users/" + widget.appData.currentUserID.toString();
 
     return await http.get(
       urlMod, 
@@ -45,7 +114,7 @@ class _CommentsState extends State<Comments> {
           return jsonDecode(response.body);
         }
         else{ 
-          print(urlMod + " get posts fail");
+          print(urlMod + " get image fail");
           //TODO... trigger some visual error
         }
     });
@@ -65,12 +134,63 @@ class _CommentsState extends State<Comments> {
       ),
       body: Stack(
         children: <Widget>[
-          ListView(
-            children: <Widget>[
-              PostComment(),
-              PostComment(),
-              PostComment(),
-            ],
+          FutureBuilder(
+            future: (forceFetch) ? getData() : fetchData(),
+            builder: (BuildContext context, AsyncSnapshot snapshot) {
+              if(snapshot.connectionState == ConnectionState.done){
+                //convert to list so we can actually use it
+                List list = snapshot.data;
+
+                //return the data
+                return ListView(
+                  children: <Widget>[
+                    Container(
+                      padding: EdgeInsets.only(bottom: 8),
+                      decoration: BoxDecoration(
+                        border: Border(
+                          bottom: BorderSide(
+                            color: Colors.grey,
+                            width: 0.5,
+                          ),
+                        ),
+                      ),
+                      child: PostComment(
+                        appData: widget.appData,
+                        imageUrl: widget.postOwnerImageUrl,
+                        email: widget.postOwnerEmail,
+                        comment: widget.postCaption,
+                        timeStamp: widget.postTimeStamp,
+                      ),
+                    ),
+                    ListView.builder(
+                      shrinkWrap: true,
+                      physics: ClampingScrollPhysics(),
+                      itemCount: list.length,
+                      itemBuilder: (context, index) => PostComment(
+                        appData: widget.appData,
+                        userID: list[index]["user_id"],
+                        comment: list[index]["text"],
+                        timeStamp: list[index]["created_at"],
+                      ),
+                    ),
+                  ],
+                );
+              }
+              else{
+                var size = MediaQuery.of(context).size.width;
+                return Container(
+                  height: size,
+                  width: size,
+                  padding: EdgeInsets.all(32),
+                  alignment: Alignment.topCenter,
+                  child: Container(
+                    height: size/2,
+                    width: size/2,
+                    child: CircularProgressIndicator(),
+                  ),
+                );
+              }
+            },
           ),
           Positioned(
             bottom: 0.0,
@@ -78,6 +198,7 @@ class _CommentsState extends State<Comments> {
             right: 0.0,
             child: Container(
               decoration: BoxDecoration(
+                color: Theme.of(context).scaffoldBackgroundColor,
                 border: Border(
                   top: BorderSide(
                     color: Colors.grey,
@@ -85,6 +206,7 @@ class _CommentsState extends State<Comments> {
                 )
               ),
               child: new TextFormField(
+                controller: newCommentText,
                 decoration: InputDecoration(
                   contentPadding: EdgeInsets.fromLTRB(0, 16, 8, 16),
                   border: InputBorder.none,
@@ -94,22 +216,42 @@ class _CommentsState extends State<Comments> {
                   ),
                   icon: Container(
                     padding: const EdgeInsets.fromLTRB(8, 8, 0, 8),
-                    child: new Container(
-                      height: 35.0,
-                      width: 35.0,
-                      decoration: new BoxDecoration(
-                        shape: BoxShape.circle,
-                        image: new DecorationImage(
-                          fit: BoxFit.fill,
-                          image: new NetworkImage(
-                            "https://pbs.twimg.com/profile_images/916384996092448768/PF1TSFOE_400x400.jpg",
+                    child: FutureBuilder(
+                      future: getImageData(),
+                      builder: (BuildContext context, AsyncSnapshot snapshot) {
+                        //generate the url
+                        var imageUrl = "";
+                        if(snapshot.connectionState == ConnectionState.done){
+                          if(snapshot.data["profile_image_url"] == null){
+                            imageUrl = "https://prd-wret.s3-us-west-2.amazonaws.com/assets/palladium/production/s3fs-public/thumbnails/image/Placeholder_person.png";
+                          }
+                          else{
+                            imageUrl = snapshot.data["profile_image_url"];
+                          }
+                        }
+                        else{
+                          imageUrl = "https://prd-wret.s3-us-west-2.amazonaws.com/assets/palladium/production/s3fs-public/thumbnails/image/Placeholder_person.png";
+                        }
+
+                        //display
+                        return Container(
+                          height: 35.0,
+                          width: 35.0,
+                          decoration: new BoxDecoration(
+                            shape: BoxShape.circle,
+                            image: new DecorationImage(
+                              fit: BoxFit.fill,
+                              image: new NetworkImage(
+                                imageUrl,
+                              ),
+                            ),
                           ),
-                        ),
-                      ),
+                        );
+                      },
                     ),
                   ),
                   suffixIcon: new FlatButton(
-                    onPressed: () => print("submit comment"),
+                    onPressed: () => newComment(),
                     child: new Text(
                       "Post",
                       style: TextStyle(
@@ -127,10 +269,79 @@ class _CommentsState extends State<Comments> {
   }
 }
 
-class PostComment extends StatelessWidget {
+class PostComment extends StatefulWidget {
+  final Data appData;
+  final int userID;
+  final String imageUrl;
+  final String email;
+  final String comment;
+  final String timeStamp;
+
   const PostComment({
+    //TODO... add functionality
+    this.appData, //used to allow edit and delete
+    this.userID,
+    this.imageUrl,
+    this.email,
+    this.comment,
+    this.timeStamp,
     Key key,
   }) : super(key: key);
+
+  @override
+  _PostCommentState createState() => _PostCommentState();
+}
+
+class _PostCommentState extends State<PostComment> {
+  final AsyncMemoizer fetchImageMemoi = AsyncMemoizer();
+
+  fetchImageData() {
+    return this.fetchImageMemoi.runOnce(() async {
+      return await getImageData();
+    });
+  }
+
+  Future getImageData() async{
+    var urlMod = widget.appData.url + "/api/v1/users/" + widget.userID.toString();
+
+    return await http.get(
+      urlMod, 
+      headers: {HttpHeaders.authorizationHeader: "Bearer " + widget.appData.token}
+    ).then((response){
+        if(response.statusCode == 200){
+          return jsonDecode(response.body);
+        }
+        else{ 
+          print(urlMod + " get image fail");
+          //TODO... trigger some visual error
+        }
+    });
+  }
+
+  final AsyncMemoizer fetchEmailMemoi = AsyncMemoizer();
+
+  fetchEmailData() {
+    return this.fetchEmailMemoi.runOnce(() async {
+      return await getEmailData();
+    });
+  }
+
+  Future getEmailData() async{
+    var urlMod = widget.appData.url + "/api/v1/users/" + widget.userID.toString();
+
+    return await http.get(
+      urlMod, 
+      headers: {HttpHeaders.authorizationHeader: "Bearer " + widget.appData.token}
+    ).then((response){
+        if(response.statusCode == 200){
+          return jsonDecode(response.body);
+        }
+        else{ 
+          print(urlMod + " get email fail");
+          //TODO... trigger some visual error
+        }
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -139,7 +350,41 @@ class PostComment extends StatelessWidget {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.start,
         children: <Widget>[
-          new Container(
+          (widget.imageUrl == null)
+          ? FutureBuilder(
+            future: fetchImageData(),
+            builder: (BuildContext context, AsyncSnapshot snapshot) {
+              //generate the url
+              var imageUrl = "";
+              if(snapshot.connectionState == ConnectionState.done){
+                if(snapshot.data["profile_image_url"] == null){
+                  imageUrl = "https://prd-wret.s3-us-west-2.amazonaws.com/assets/palladium/production/s3fs-public/thumbnails/image/Placeholder_person.png";
+                }
+                else{
+                  imageUrl = snapshot.data["profile_image_url"];
+                }
+              }
+              else{
+                imageUrl = "https://prd-wret.s3-us-west-2.amazonaws.com/assets/palladium/production/s3fs-public/thumbnails/image/Placeholder_person.png";
+              }
+
+              //display
+              return new Container(
+                height: 40.0,
+                width: 40.0,
+                decoration: new BoxDecoration(
+                  shape: BoxShape.circle,
+                  image: new DecorationImage(
+                    fit: BoxFit.fill,
+                    image: new NetworkImage(
+                      imageUrl,
+                    ),
+                  ),
+                ),
+              );
+            },
+          )
+          : Container(
             height: 40.0,
             width: 40.0,
             decoration: new BoxDecoration(
@@ -147,7 +392,7 @@ class PostComment extends StatelessWidget {
               image: new DecorationImage(
                 fit: BoxFit.fill,
                 image: new NetworkImage(
-                  "https://pbs.twimg.com/profile_images/916384996092448768/PF1TSFOE_400x400.jpg",
+                  widget.imageUrl,
                 ),
               ),
             ),
@@ -158,19 +403,56 @@ class PostComment extends StatelessWidget {
           Expanded(
             child: Column(
               mainAxisAlignment: MainAxisAlignment.start,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
               children: <Widget>[
-                RichText(
+                (widget.email == null)
+                ? FutureBuilder(
+                  future: getEmailData(),
+                  builder: (BuildContext context, AsyncSnapshot snapshot) {
+                    if(snapshot.connectionState ==ConnectionState.done){
+                      return RichText(
+                        textAlign: TextAlign.left,
+                        text: TextSpan(
+                          children: [
+                            TextSpan(
+                              text: (snapshot.data["email"]).split('@')[0],
+                              style: TextStyle(
+                                fontWeight: FontWeight.bold,
+                                color: Colors.black,
+                              ),
+                            ),
+                            TextSpan(
+                              text: " " + widget.comment,
+                              style: TextStyle(color: Colors.grey),
+                            ),
+                          ]
+                        ),
+                      );
+                    }
+                    else{
+                      return RichText(
+                        textAlign: TextAlign.left,
+                        text: TextSpan(
+                          text: widget.comment,
+                          style: TextStyle(color: Colors.grey),
+                        ),
+                      );
+                    }
+                  },
+                )
+                : RichText(
+                  textAlign: TextAlign.left,
                   text: TextSpan(
                     children: [
                       TextSpan(
-                        text: "the fellas name",
+                        text: (widget.email).split('@')[0],
                         style: TextStyle(
                           fontWeight: FontWeight.bold,
                           color: Colors.black,
                         ),
                       ),
                       TextSpan(
-                        text: " " + "a comment that merits everyones attention",
+                        text: " " + widget.comment,
                         style: TextStyle(color: Colors.grey),
                       ),
                     ]
@@ -179,7 +461,7 @@ class PostComment extends StatelessWidget {
                 Container(
                   alignment: Alignment.centerLeft,
                   child: Text(
-                    "posted on " + "12/23/13 9:00 pm", 
+                    "posted on " + widget.timeStamp, 
                     style: TextStyle(
                       color: Colors.grey,
                       fontSize: 10,
