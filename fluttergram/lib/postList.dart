@@ -77,6 +77,7 @@ class _PostListState extends State<PostList> {
               commentCount: list[index]["comments_count"],
               postOwnerEmail: list[index]["user_email"],
               postOwnerImageUrl: list[index]["user_profile_image_url"],
+              startLiked: list[index]["liked"],
               liked: new ValueNotifier(list[index]["liked"]),
             ),
           );
@@ -116,6 +117,7 @@ class Post extends StatelessWidget {
   final int commentCount;
   final String postOwnerEmail;
   final String postOwnerImageUrl;
+  final bool startLiked;
   final ValueNotifier liked;
   Post({
     this.appData, //used to determine if we should have links to the other users
@@ -128,6 +130,7 @@ class Post extends StatelessWidget {
     this.commentCount, //display count of comments
     this.postOwnerEmail, //diplays in front of the caption
     this.postOwnerImageUrl, //used to know who owns the post
+    this.startLiked,
     this.liked,
   });
 
@@ -255,9 +258,22 @@ class Post extends StatelessWidget {
         ),
         Padding(
           padding: const EdgeInsets.fromLTRB(16, 0, 16, 0),
-          child: Text(
-            likeCount.toString() + ((likeCount == 1) ? " like" : " likes"), 
-            style: TextStyle(fontWeight: FontWeight.bold),
+          child: AnimatedBuilder(
+            animation: liked,
+            builder: (BuildContext context, Widget child) {
+              //adjust for client side changes without reloading
+              int actualLikes = likeCount;
+              if(startLiked != liked.value){
+                if(liked.value) actualLikes += 1;
+                else actualLikes -= 1;
+              }
+
+              //display actual likes
+              return Text(
+                actualLikes.toString() + ((actualLikes == 1) ? " like" : " likes"), 
+                style: TextStyle(fontWeight: FontWeight.bold),
+              );
+            },
           ),
         ),
         Padding(
@@ -280,14 +296,12 @@ class Post extends StatelessWidget {
             ),
           ),
         ),
-        (commentCount == 0 || commentCount == null)
-        ? Container()
-        : GestureDetector(
+        GestureDetector(
           onTap: () => goToComments(),
           child: Padding(
             padding: const EdgeInsets.fromLTRB(16, 0, 16, 4),
             child: Text(
-              "View all " + commentCount.toString() + ((commentCount == 1) ? " comment" : " comments"), 
+              "View all comments", 
               style: TextStyle(color: Colors.grey),
             ),
           ),

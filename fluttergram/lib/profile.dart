@@ -273,6 +273,7 @@ class _UserProfilePageState extends State<UserProfilePage> {
                         crossAxisAlignment: CrossAxisAlignment.stretch,
                         children: <Widget>[
                           new ProfileData(
+                            appData: widget.appData,
                             userID: widget.appData.whoOwnsPostsID,
                             posts: 12,
                             comments: 35,
@@ -573,13 +574,15 @@ class _UserProfilePageState extends State<UserProfilePage> {
   //-------------------------VERY DELICATE SYSTEM END-------------------------
 }
 
-class ProfileData extends StatelessWidget {
+class ProfileData extends StatefulWidget {
+  final Data appData;
   final int userID;
   final int posts;
   final int comments;
   final int likes;
 
   const ProfileData({
+    @required this.appData,
     @required this.userID,
     this.posts,
     this.comments,
@@ -588,16 +591,139 @@ class ProfileData extends StatelessWidget {
   }) : super(key: key);
 
   @override
+  _ProfileDataState createState() => _ProfileDataState();
+}
+
+class _ProfileDataState extends State<ProfileData> {
+  final AsyncMemoizer _memoizer = AsyncMemoizer();
+
+  fetchData() {
+    return this._memoizer.runOnce(() async {
+      return await getData();
+    });
+  }
+
+  Future getData() async{
+    //get all the posts
+    var urlMod = widget.appData.url + "/api/v1/posts";
+
+    return await http.get(
+      urlMod, 
+      headers: {HttpHeaders.authorizationHeader: "Bearer " + widget.appData.token}
+    ).then((response) async{
+        if(response.statusCode == 200){
+          return await processPosts(jsonDecode(response.body));
+        }
+        else{ 
+          print(urlMod + " get posts fail");
+          //TODO... trigger some visual error
+        }
+    });
+  }
+
+  Future processPosts(posts) async{
+    int postCount = 0;
+    int commentCount = 0;
+    int likeCount = 0;
+
+    List list = posts;
+    for(int postID = 0; postID < list.length; postID+=1){
+      //update postCount
+      if(list[postID]["user_id"] == widget.userID){
+        postCount += 1;
+      }
+
+      //get all comments from this userID from this particular post
+      int newCommentCount = await getComments(list[postID]["id"]);
+      commentCount += newCommentCount;
+
+      //get all the likes from this userID from this particular post
+      int newLikeCount = await getLikes(list[postID]["id"]);
+      likeCount += newLikeCount;
+    }
+
+    //return our map
+    Map<String, int> map = new Map();
+    map.putIfAbsent("postCount", () => postCount);
+    map.putIfAbsent("commentCount", () => commentCount);
+    map.putIfAbsent("likeCount", () => likeCount);
+    return map;
+  }
+
+  Future getComments(thisPostID) async{
+    var urlMod = widget.appData.url + "/api/v1/posts/" + thisPostID.toString() + "/comments";
+
+    return await http.get(
+      urlMod, 
+      headers: {HttpHeaders.authorizationHeader: "Bearer " + widget.appData.token}
+    ).then((response) async{
+        if(response.statusCode == 200){
+          List comments = jsonDecode(response.body);
+          int commentCount = 0;
+          for(int commentID = 0; commentID < comments.length; commentID += 1){
+            if(comments[commentID]["user_id"] == widget.userID){
+              commentCount += 1;
+            }
+          }
+          return commentCount;
+        }
+        else{ 
+          print(urlMod + " get comments fail");
+          //TODO... trigger some visual error
+        }
+    });
+  }
+
+  Future getLikes(thisPostID) async{
+    var urlMod = widget.appData.url + "/api/v1/posts/" + thisPostID.toString() + "/likes";
+
+    return await http.get(
+      urlMod, 
+      headers: {HttpHeaders.authorizationHeader: "Bearer " + widget.appData.token}
+    ).then((response) async{
+        if(response.statusCode == 200){
+          List likes = jsonDecode(response.body);
+          int likesCount = 0;
+          for(int likeID = 0; likeID < likes.length; likeID += 1){
+            if(likes[likeID]["user_id"] == widget.userID){
+              likesCount += 1;
+            }
+          }
+          return likesCount;
+        }
+        else{ 
+          print(urlMod + " get like fail");
+          //TODO... trigger some visual error
+        }
+    });
+  }
+
+  @override
   Widget build(BuildContext context) {
     return Container(
       padding: EdgeInsets.only(top: 16, right: 16),
-      child: new Row(
-        mainAxisAlignment: MainAxisAlignment.spaceAround,
-        children: <Widget>[
-          Stat(number: posts.toString(), text: "Posts"),
-          Stat(number: comments.toString(), text: "Comments"),
-          Stat(number: likes.toString(), text: "Likes"),
-        ],
+      child: FutureBuilder(
+        future: fetchData(),
+        builder: (BuildContext context, AsyncSnapshot snapshot) {
+          int postCount = 0;
+          int commentCount = 0;
+          int likeCount = 0;
+          if(snapshot.connectionState == ConnectionState.done){
+            print("doney now boyo");
+            postCount = snapshot.data["postCount"];
+            commentCount = snapshot.data["commentCount"];
+            likeCount = snapshot.data["likeCount"];
+          }
+
+          return new Row(
+            mainAxisAlignment: MainAxisAlignment.spaceAround,
+            children: <Widget>[
+              Stat(number: postCount.toString(), text: "Posts"),
+              Stat(number: commentCount.toString(), text: "Comments"),
+              Stat(number: likeCount.toString(), text: "Likes"),
+            ],
+          );
+        },
       ),
     );
   }
