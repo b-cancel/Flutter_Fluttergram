@@ -42,22 +42,29 @@ class _ProfileState extends State<Profile> {
   }
 
   Future getData() async{
-    print("getting data");
-
     //retreive data from server
-    var urlMod = widget.appData.url + "/api/v1/my_account";
+    var urlMod = widget.appData.url + "/api/v1/users/" + widget.appData.whoOwnsPostsID.toString();
+
+    print("user being inspected 1.2 " + widget.appData.whoOwnsPostsID.toString() + " & " + widget.appData.currentUserID.toString());
+    var oldOwner = widget.appData.whoOwnsPostsID;
 
     return await http.get(
       urlMod, 
       headers: {HttpHeaders.authorizationHeader: "Bearer " + widget.appData.token}
     ).then((response){
-        if(response.statusCode == 200){ 
-          return jsonDecode(response.body);
-        }
-        else{ 
-          print(urlMod + " get profile fail");
-          //TODO... trigger some visual error
-        }
+      //restore old owner
+      widget.appData.whoOwnsPostsID = oldOwner;
+
+      //process data
+      print("user being inspected 1.3 " + widget.appData.whoOwnsPostsID.toString() + " & " + widget.appData.currentUserID.toString());
+      if(response.statusCode == 200){ 
+        return jsonDecode(response.body);
+        //TODO... get the count of user posts... user likes... and user comments
+      }
+      else{ 
+        print(urlMod + " get profile fail");
+        //TODO... trigger some visual error
+      }
     });
   }
 
@@ -69,7 +76,8 @@ class _ProfileState extends State<Profile> {
       builder: (BuildContext context, AsyncSnapshot snapshot) {
         if(snapshot.connectionState == ConnectionState.done){
           return UserProfilePage(
-            editable: true,
+            //we only edit our own page
+            editable: (widget.appData.whoOwnsPostsID == widget.appData.currentUserID),
             appData: widget.appData,
             email: snapshot.data["email"],
             bio: snapshot.data["bio"],
@@ -78,7 +86,18 @@ class _ProfileState extends State<Profile> {
           );
         }
         else{
-          return CircularProgressIndicator();
+          var size = MediaQuery.of(context).size.width;
+          return Container(
+            height: size,
+            width: size,
+            padding: EdgeInsets.all(32),
+            alignment: Alignment.topCenter,
+            child: Container(
+              height: size/2,
+              width: size/2,
+              child: CircularProgressIndicator(),
+            ),
+          );
         }
       },
     );
@@ -310,19 +329,9 @@ class _UserProfilePageState extends State<UserProfilePage> {
                     );
                   },
                 ),
-                RefreshIndicator(
-                  onRefresh: () => refresh(),
-                  child: Container(
-                    child: Column(
-                      children: <Widget>[
-                        Post(),
-                        Post(),
-                        Post(),
-                      ],
-                    )
-                  ),
+                PostList(
+                  appData: widget.appData,
                 ),
-                //PostList(),
               ],
             ),
           ],

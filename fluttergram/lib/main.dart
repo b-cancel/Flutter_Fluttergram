@@ -110,19 +110,35 @@ class _LoginPageState extends State<LoginPage> {
     http.get(
       widget.appData.url + "/api/token_check", 
       headers: {HttpHeaders.authorizationHeader: "Bearer " + widget.appData.token}
-    ).then((respone){
-      if(respone.statusCode == 200){
-        var jsonResponse = jsonDecode(respone.body);
+    ).then((response){
+      if(response.statusCode == 200){
+        var jsonResponse = jsonDecode(response.body);
         if(jsonResponse["message"] == "Valid Token"){
-          //go to next page with valid token
-          Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (context) => Home(
-                appData: widget.appData,
-              ),
-            ),
-          );
+          http.get(
+            widget.appData.url + "/api/v1/my_account",
+            headers: {HttpHeaders.authorizationHeader: "Bearer " + widget.appData.token}
+          ).then((response){
+            if(response.statusCode == 200){
+              var jsonResponse = jsonDecode(response.body);
+
+              //set our appData vars
+              widget.appData.currentUserID = jsonResponse["id"];
+
+              //go to next page with valid token
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => Home(
+                    appData: widget.appData,
+                  ),
+                ),
+              );
+            }
+            else{
+              print(widget.appData.url + "/api/v1/my_account" + " problem");
+              //TODO... trigger some visual error
+            }
+          });
         }
         else{
           print(widget.appData.url + "/api/token_check" + " token problem 2 " + jsonResponse["message"]);

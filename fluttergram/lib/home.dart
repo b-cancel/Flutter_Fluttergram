@@ -17,13 +17,20 @@ class Home extends StatefulWidget {
 class _HomeState extends State<Home> {
   int _selectedIndex = 0;
 
+  Data modForMyPosts(appData){
+    appData.whoOwnsPostsID = appData.currentUserID;
+    return appData;
+  }
+
   @override
   Widget build(BuildContext context) {
     var _widgetOptions = [
-      Posts(),
+      Posts(
+        appData: widget.appData,
+      ),
       NewPost(),
       Profile(
-        appData: widget.appData,
+        appData: modForMyPosts(widget.appData),
       ),
     ];
 
