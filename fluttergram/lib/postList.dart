@@ -77,7 +77,7 @@ class _PostListState extends State<PostList> {
               commentCount: list[index]["comments_count"],
               postOwnerEmail: list[index]["user_email"],
               postOwnerImageUrl: list[index]["user_profile_image_url"],
-              likedByYou: list[index]["liked"],
+              liked: new ValueNotifier(list[index]["liked"]),
             ),
           );
         }
@@ -116,7 +116,7 @@ class Post extends StatelessWidget {
   final int commentCount;
   final String postOwnerEmail;
   final String postOwnerImageUrl;
-  final bool likedByYou;
+  final ValueNotifier liked;
   Post({
     this.appData, //used to determine if we should have links to the other users
     this.postID,
@@ -128,7 +128,7 @@ class Post extends StatelessWidget {
     this.commentCount, //display count of comments
     this.postOwnerEmail, //diplays in front of the caption
     this.postOwnerImageUrl, //used to know who owns the post
-    this.likedByYou
+    this.liked,
   });
 
   Data modForUser(appData, id){
@@ -200,15 +200,23 @@ class Post extends StatelessWidget {
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: <Widget>[
                   GestureDetector(
-                    onTap: () => like(!likedByYou, postID),
-                    child: (likedByYou)
-                      ? new Icon(
-                        FontAwesomeIcons.solidHeart,
-                        color: Colors.red,
-                      )
-                      : new Icon(
-                        FontAwesomeIcons.heart,
-                      ),
+                    onTap: () => like(postID, !liked.value),
+                    child: AnimatedBuilder(
+                      animation: liked,
+                      builder: (BuildContext context, Widget child) {
+                        if(liked.value){
+                          return Icon(
+                            FontAwesomeIcons.solidHeart,
+                            color: Colors.red,
+                          );
+                        }
+                        else{
+                          return Icon(
+                            FontAwesomeIcons.heart,
+                          );
+                        }
+                      },
+                    ),
                   ),
                   Row(
                     children: <Widget>[
@@ -303,7 +311,48 @@ class Post extends StatelessWidget {
   }
 
   void like(postID, doWeLike){
-    print("post " + postID.toString() + " will now be liked is " + doWeLike.toString());
+    if(doWeLike){
+      //make url
+      var urlMod = appData.url + "/api/v1/posts/" + postID.toString() + "/likes";
+
+      //use server
+      http.post(
+        urlMod, 
+        headers: {HttpHeaders.authorizationHeader: "Bearer " + appData.token}
+      ).then((response){
+        //process data
+        if(response.statusCode == 200){ 
+          print("liking succeed");
+          liked.value = doWeLike;
+          //TODO... get the count of user posts... user likes... and user comments
+        }
+        else{ 
+          print(urlMod + " liking fail");
+          //TODO... trigger some visual error
+        }
+      });
+    }
+    else{
+      //make url
+      var urlMod = appData.url + "/api/v1/posts/" + postID.toString() + "/likes";
+
+      //use server
+      http.delete(
+        urlMod, 
+        headers: {HttpHeaders.authorizationHeader: "Bearer " + appData.token}
+      ).then((response){
+        //process data
+        if(response.statusCode == 200){ 
+          print("UN liking succeed");
+          liked.value = doWeLike;
+          //TODO... get the count of user posts... user likes... and user comments
+        }
+        else{ 
+          print(urlMod + " UN liking fail");
+          //TODO... trigger some visual error
+        }
+      });
+    }
   }
 
   Widget buildClickOrNoClick(BuildContext context) {
