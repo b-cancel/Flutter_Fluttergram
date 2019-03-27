@@ -13,7 +13,6 @@ import 'package:fluttergram/postList.dart';
 import 'dart:convert';
 import 'dart:io';
 import 'package:http/http.dart' as http;
-import 'package:http_parser/http_parser.dart'; 
 import 'package:image_picker/image_picker.dart';
 import 'package:dio/dio.dart';
 
@@ -35,17 +34,17 @@ class Profile extends StatefulWidget {
 }
 
 class _ProfileState extends State<Profile> {
-  final AsyncMemoizer _memoizer = AsyncMemoizer();
+  final AsyncMemoizer mainMemoizer = AsyncMemoizer();
 
-  bool forceFetch = false;
+  bool mainForceFetch = false;
 
-  fetchData() {
-    return this._memoizer.runOnce(() async {
-      return await getData();
+  fetchMainData() {
+    return this.mainMemoizer.runOnce(() async {
+      return await getMainData();
     });
   }
 
-  Future getData() async{
+  Future getMainData() async{
     //retreive data from server
     var urlMod = widget.appData.url + "/api/v1/users/" + widget.appData.whoOwnsPostsID.toString();
 
@@ -60,7 +59,7 @@ class _ProfileState extends State<Profile> {
 
       //process data
       if(response.statusCode == 200){ 
-        forceFetch = false; //in case it was triggered by this
+        mainForceFetch = false; //in case it was triggered by this
 
         return jsonDecode(response.body);
         //TODO... get the count of user posts... user likes... and user comments
@@ -72,66 +71,14 @@ class _ProfileState extends State<Profile> {
     });
   }
 
-  void forceReload(){
+  void forceMainReload(){
     print("force reloading profile");
-    forceFetch = true;
+    mainForceFetch = true;
     setState(() {});
   }
 
-  @override
-  Widget build(BuildContext context) {
-    //show loading in the meantime
-    return FutureBuilder(
-      future: (forceFetch) ? getData() : fetchData(),
-      builder: (BuildContext context, AsyncSnapshot snapshot) {
-        if(snapshot.connectionState == ConnectionState.done){
-          return UserProfilePage(
-            //we only edit our own page
-            editable: (widget.appData.whoOwnsPostsID == widget.appData.currentUserID),
-            appData: widget.appData,
-            email: snapshot.data["email"],
-            bio: snapshot.data["bio"],
-            imageUrl: snapshot.data["profile_image_url"],
-            spawnTime: snapshot.data["created_at"],
-            callback: (){
-              forceReload(); //force reload profile
-              //IF this profile was called from a postList then we will reload that
-              widget.callback(); 
-            },
-          );
-        }
-        else return CustomLoading();
-      },
-    );
-  }
-}
+  //---
 
-//-------------------------VISUAL DATA DISPLAY-------------------------
-
-class UserProfilePage extends StatefulWidget {
-  final bool editable;
-  final Data appData;
-  final String email;
-  final String imageUrl;
-  final String bio;
-  final String spawnTime;
-  final Function callback;
-
-  UserProfilePage({
-    this.editable,
-    this.appData,
-    this.email,
-    this.imageUrl,
-    this.bio,
-    this.spawnTime,
-    @required this.callback,
-  });
-
-  @override
-  _UserProfilePageState createState() => _UserProfilePageState();
-}
-
-class _UserProfilePageState extends State<UserProfilePage> {
   ValueNotifier<String> imageUrl;
   ValueNotifier<bool> expandedField;
 
@@ -143,11 +90,8 @@ class _UserProfilePageState extends State<UserProfilePage> {
     fontSize: 16.0,
   );
 
-  @override
-  void initState(){
-    getPosts();
-
-    imageUrl = new ValueNotifier(widget.imageUrl);
+  void initAfterFutureBuilder(newImageUrl, bio){
+    imageUrl = new ValueNotifier(newImageUrl);
     expandedField = new ValueNotifier(false);
 
     bioNode.addListener((){
@@ -155,9 +99,9 @@ class _UserProfilePageState extends State<UserProfilePage> {
     });
 
     //set the initial value of our text field
-    bioController.text = widget.bio;
+    bioController.text = bio;
 
-    super.initState();
+    getPosts();
   }
 
   bool forceFetch = false;
@@ -253,219 +197,245 @@ class _UserProfilePageState extends State<UserProfilePage> {
     });
   }
 
+  //---
+
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: PreferredSize(
-        preferredSize: Size.fromHeight(45),
-        child: AppBar(
-          backgroundColor: new Color(0xfff8faf8),
-          elevation: 1.0,
-          leading: (widget.editable) 
-          ? Container() 
-          : IconButton(
-            icon: const BackButtonIcon(),
-            color: Colors.black,
-            tooltip: MaterialLocalizations.of(context).backButtonTooltip,
-            onPressed: () {
-              Navigator.maybePop(context).then((value){
-                widget.callback(); //DOES NOT NEED TO REFRESH US (we are leaving)
-              });
-            }
-          ),
-          centerTitle: false,
-          title: Transform.translate(
-            offset: Offset((widget.editable) ? -60 : 0, 0),
-            child: Container(
-              child: new Row(
-                mainAxisSize: MainAxisSize.min,
-                mainAxisAlignment: MainAxisAlignment.start,
-                children: <Widget>[
-                  Padding(
-                    padding: (widget.editable)
-                    ? EdgeInsets.only(right: 4.0)
-                    : EdgeInsets.all(0),
-                    child: new Text(
-                      (widget.email).split('@')[0],
-                      style: TextStyle(
-                        color: Colors.black,
-                        fontSize: 16,
-                      ),
-                    ),
-                  ),
-                  (widget.editable == false) 
-                  ? Container()
-                  : new Icon(
-                    FontAwesomeIcons.chevronDown,
-                    size: 8,
-                  ) ,
-                ],
-              ),
-            ),
-          ),
-        ),
-      ),
-      body: Container(
-        child: ListView(
-          children: <Widget>[
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: <Widget>[
-                Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: <Widget>[
-                    Container(
-                      padding: EdgeInsets.all(16),
-                      child: Container(
-                        height: (widget.editable) ? 100 : 75,
-                        width: (widget.editable) ? 100 : 75,
-                        child: Stack(
-                          children: <Widget>[
-                            AnimatedBuilder(
-                              animation: imageUrl,
-                              builder: (context, child){
-                                return Container(
-                                  decoration: BoxDecoration(
-                                    image: DecorationImage(
-                                      image: new NetworkImage(imageUrl.value),
-                                      fit: BoxFit.cover,
-                                    ),
-                                    borderRadius: BorderRadius.circular(100.0),
-                                    border: Border.all(
-                                      color: Colors.black,
-                                      width: 1.0,
-                                    ),
-                                  ),
-                                );
-                              },
-                            ),
-                            (widget.editable == false) 
-                            ? Container()
-                            : new Stack(
-                              children: <Widget>[
-                                Align(
-                                  alignment: Alignment.bottomRight,
-                                  child: Container(
-                                    padding: EdgeInsets.all(4),
-                                    decoration: BoxDecoration(
-                                      borderRadius: BorderRadius.circular(80.0),
-                                      color: Colors.blue,
-                                      border: Border.all(
-                                        color: Colors.white,
-                                        width: 2,
-                                      ),
-                                    ),
-                                    child: Icon(
-                                      Icons.edit,
-                                      color: Colors.white,
-                                      size: 16,
-                                    ),
-                                  ),
-                                ),
-                                FlatButton(
-                                  shape: CircleBorder(),
-                                  onPressed: () => imagePicker(),
-                                  child: Container(),
-                                ),
-                              ],
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.stretch,
-                        children: <Widget>[
-                          Padding(
-                            padding: EdgeInsets.only(top: 16, right: 16),
-                            child: AnimatedBuilder(
-                              animation: postCount,
-                              builder: (BuildContext context, Widget child) {
-                                return AnimatedBuilder(
-                                  animation: commentCount,
-                                  builder: (BuildContext context, Widget child) {
-                                    return AnimatedBuilder(
-                                      animation: likeCount,
-                                      builder: (BuildContext context, Widget child) {
-                                        return new Row(
-                                          mainAxisAlignment: MainAxisAlignment.spaceAround,
-                                          children: <Widget>[
-                                            Stat(number: postCount.value.toString(), text: "Posts"),
-                                            Stat(number: commentCount.value.toString(), text: "Comments"),
-                                            Stat(number: likeCount.value.toString(), text: "Likes"),
-                                          ],
-                                        );
-                                      },
-                                    );
-                                  },
-                                );
-                              },
+    bool editable = (widget.appData.whoOwnsPostsID == widget.appData.currentUserID);
+    
+    //show loading in the meantime
+    return FutureBuilder(
+      future: (mainForceFetch) ? getMainData() : fetchMainData(),
+      builder: (BuildContext context, AsyncSnapshot snapshot) {
+        if(snapshot.connectionState == ConnectionState.done){
+          //grab our vars from the json
+          String email = snapshot.data["email"];
+          String bio = snapshot.data["bio"];
+          String spawnTime = snapshot.data["created_at"];
+
+          //create our new call back
+          Function callback = (){
+            forceMainReload(); //force reload profile
+            //IF this profile was called from a postList then we will reload that
+            widget.callback(); 
+          };
+
+          //initialize important stuff
+          initAfterFutureBuilder(snapshot.data["profile_image_url"], bio);
+
+          return Scaffold(
+            appBar: PreferredSize(
+              preferredSize: Size.fromHeight(45),
+              child: AppBar(
+                backgroundColor: new Color(0xfff8faf8),
+                elevation: 1.0,
+                leading: (editable) 
+                ? Container() 
+                : IconButton(
+                  icon: const BackButtonIcon(),
+                  color: Colors.black,
+                  tooltip: MaterialLocalizations.of(context).backButtonTooltip,
+                  onPressed: () {
+                    Navigator.maybePop(context).then((value){
+                      widget.callback(); //DOES NOT NEED TO REFRESH US (we are leaving)
+                    });
+                  }
+                ),
+                centerTitle: false,
+                title: Transform.translate(
+                  offset: Offset((editable) ? -60 : 0, 0),
+                  child: Container(
+                    child: new Row(
+                      mainAxisSize: MainAxisSize.min,
+                      mainAxisAlignment: MainAxisAlignment.start,
+                      children: <Widget>[
+                        Padding(
+                          padding: (editable)
+                          ? EdgeInsets.only(right: 4.0)
+                          : EdgeInsets.all(0),
+                          child: new Text(
+                            (email).split('@')[0],
+                            style: TextStyle(
+                              color: Colors.black,
+                              fontSize: 16,
                             ),
                           ),
-                          (widget.editable == false)
-                          ? Container()
-                          : Padding(
-                            padding: const EdgeInsets.only(right: 16.0),
-                            child: AnimatedBuilder(
-                              animation: editing,
-                              builder: (BuildContext context, Widget child) {
-                                return editDoneButton();
-                              },
+                        ),
+                        (editable == false) 
+                        ? Container()
+                        : new Icon(
+                          FontAwesomeIcons.chevronDown,
+                          size: 8,
+                        ) ,
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            ),
+            body: Container(
+              child: ListView(
+                children: <Widget>[
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: <Widget>[
+                      Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: <Widget>[
+                          Container(
+                            padding: EdgeInsets.all(16),
+                            child: Container(
+                              height: (editable) ? 100 : 75,
+                              width: (editable) ? 100 : 75,
+                              child: Stack(
+                                children: <Widget>[
+                                  AnimatedBuilder(
+                                    animation: imageUrl,
+                                    builder: (context, child){
+                                      return Container(
+                                        decoration: BoxDecoration(
+                                          image: DecorationImage(
+                                            image: new NetworkImage(imageUrl.value),
+                                            fit: BoxFit.cover,
+                                          ),
+                                          borderRadius: BorderRadius.circular(100.0),
+                                          border: Border.all(
+                                            color: Colors.black,
+                                            width: 1.0,
+                                          ),
+                                        ),
+                                      );
+                                    },
+                                  ),
+                                  (editable == false) 
+                                  ? Container()
+                                  : new Stack(
+                                    children: <Widget>[
+                                      Align(
+                                        alignment: Alignment.bottomRight,
+                                        child: Container(
+                                          padding: EdgeInsets.all(4),
+                                          decoration: BoxDecoration(
+                                            borderRadius: BorderRadius.circular(80.0),
+                                            color: Colors.blue,
+                                            border: Border.all(
+                                              color: Colors.white,
+                                              width: 2,
+                                            ),
+                                          ),
+                                          child: Icon(
+                                            Icons.edit,
+                                            color: Colors.white,
+                                            size: 16,
+                                          ),
+                                        ),
+                                      ),
+                                      FlatButton(
+                                        shape: CircleBorder(),
+                                        onPressed: () => imagePicker(),
+                                        child: Container(),
+                                      ),
+                                    ],
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.stretch,
+                              children: <Widget>[
+                                Padding(
+                                  padding: EdgeInsets.only(top: 16, right: 16),
+                                  child: AnimatedBuilder(
+                                    animation: postCount,
+                                    builder: (BuildContext context, Widget child) {
+                                      return AnimatedBuilder(
+                                        animation: commentCount,
+                                        builder: (BuildContext context, Widget child) {
+                                          return AnimatedBuilder(
+                                            animation: likeCount,
+                                            builder: (BuildContext context, Widget child) {
+                                              return new Row(
+                                                mainAxisAlignment: MainAxisAlignment.spaceAround,
+                                                children: <Widget>[
+                                                  Stat(number: postCount.value.toString(), text: "Posts"),
+                                                  Stat(number: commentCount.value.toString(), text: "Comments"),
+                                                  Stat(number: likeCount.value.toString(), text: "Likes"),
+                                                ],
+                                              );
+                                            },
+                                          );
+                                        },
+                                      );
+                                    },
+                                  ),
+                                ),
+                                (editable == false)
+                                ? Container()
+                                : Padding(
+                                  padding: const EdgeInsets.only(right: 16.0),
+                                  child: AnimatedBuilder(
+                                    animation: editing,
+                                    builder: (BuildContext context, Widget child) {
+                                      return editDoneButton();
+                                    },
+                                  ),
+                                )
+                              ],
                             ),
                           )
                         ],
                       ),
-                    )
-                  ],
-                ),
-                AnimatedBuilder(
-                  animation: expandedField,
-                  builder: (BuildContext context, Widget child) {
-                    return Column(
-                      children: <Widget>[
-                        ClipRect(
-                          child: Padding(
-                            padding: const EdgeInsets.only(left: 16, right: 16),
-                            child: TextFormField(
-                              focusNode: bioNode,
-                              controller: bioController,
-                              style: bioTextStyle,
-                              maxLines: (expandedField.value) ? 7 : 1,
-                              decoration: InputDecoration(
-                                border: InputBorder.none,
+                      AnimatedBuilder(
+                        animation: expandedField,
+                        builder: (BuildContext context, Widget child) {
+                          return Column(
+                            children: <Widget>[
+                              ClipRect(
+                                child: Padding(
+                                  padding: const EdgeInsets.only(left: 16, right: 16),
+                                  child: TextFormField(
+                                    focusNode: bioNode,
+                                    controller: bioController,
+                                    style: bioTextStyle,
+                                    maxLines: (expandedField.value) ? 7 : 1,
+                                    decoration: InputDecoration(
+                                      border: InputBorder.none,
+                                    ),
+                                  ),
+                                ),
                               ),
-                            ),
-                          ),
-                        ),
-                        GestureDetector(
-                          onTap:  () => fieldSizeToggle(),
-                          behavior: HitTestBehavior.opaque,
-                          child: Container(
-                            padding: EdgeInsets.only(right: 16),
-                            alignment: Alignment.bottomRight,
-                            child: new Text(
-                              (expandedField.value) ? "Show Less" : "Show More",
-                            ),
-                          ),
-                        ),
-                      ],
-                    );
-                  },
-                ),
-                PostList(
-                  appData: widget.appData,
-                  //NOTE: MIGHT NEED TO refresh us IF we go to comments section
-                  callback: (){
-                    widget.callback();
-                    //TODO... refresh Stats
-                  },
-                ),
-              ],
+                              GestureDetector(
+                                onTap:  () => fieldSizeToggle(),
+                                behavior: HitTestBehavior.opaque,
+                                child: Container(
+                                  padding: EdgeInsets.only(right: 16),
+                                  alignment: Alignment.bottomRight,
+                                  child: new Text(
+                                    (expandedField.value) ? "Show Less" : "Show More",
+                                  ),
+                                ),
+                              ),
+                            ],
+                          );
+                        },
+                      ),
+                      PostList(
+                        appData: widget.appData,
+                        callback: (){
+                          callback();
+                        },
+                      ),
+                    ],
+                  ),
+                ],
+              ),
             ),
-          ],
-        ),
-      ),
+          );
+        }
+        else return CustomLoading();
+      },
     );
   }
 

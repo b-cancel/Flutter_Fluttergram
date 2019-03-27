@@ -39,6 +39,7 @@ class _PostsState extends State<Posts> {
       ),
       body: PostList(
         appData: modForAllPosts(widget.appData),
+        callback: () => print("callback not needed we are at home"),
       ),
     );
   }
