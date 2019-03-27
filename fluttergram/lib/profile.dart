@@ -429,64 +429,120 @@ class _UserProfilePageState extends State<UserProfilePage> {
     }
   }
 
-  //-------------------------VERY DELICATE SYSTEM START-------------------------
-
-  //USED BY:
-  //1. show less or show more
-  //2. clicking on the field ON OCCASION
   void fieldSizeToggle(){
     expandedField.value = !expandedField.value;
-    if(expandedField.value == false){
-      if(bioNode.hasFocus){
-        FocusScope.of(context).requestFocus(new FocusNode());
+    if(expandedField.value == false){ //Collapsing Field
+      if(editing.value){
+        editing.value = false;
+        updateBio();
       }
+      FocusScope.of(context).requestFocus(new FocusNode());
+    }
+    //ELSE... Expanding Field
+    //editing GUARANTEED false
+    //focus GUARANTEED false
+  }
+
+  void editDoneButtonFunction(){
+    editing.value = !editing.value;
+    if(editing.value){
+      //open the field if needed
+      if(expandedField.value == false){
+        expandedField.value = true;
+      }
+
+      //we should now be editing the field
+      FocusScope.of(context).requestFocus(bioNode);
+    }
+    else{
+      //save the value
+      updateBio();
+
+      //expanded GUARANTEED to be true
+
+      //we are done editing the field
+      FocusScope.of(context).requestFocus(new FocusNode());
     }
   }
+
+  //-------------------------VERY DELICATE SYSTEM START-------------------------
+  //NOTE: IF expandedField.value 
+  //field may or may not have focus
+
+  //NOTE: Because "SHOW MORE" doesn't change the focus of the edit field 
+  //it isnt mentioned below
+
+  //NOTE: IF expandedField.value == false && we don't have focus
+  //then its possible "fieldSizeToggle" caused it [CASE 1]
+
+  //NOTE: IF editing.value && expandedField.value = true && we have focus
+  //then its possible EDIT BUTTON triggered it [CASE 2]
+
+  //NOTE: If editing.value == false && we don't have focus
+  //then its possible DONE BUTTON triggered it [CASE 3]
+
+  //NOTE: If we gain focus but we are not editing
+  //then we triggered by someone tapping the field when they should not have [CASE 4]
 
   //USED BY: only the bio node focus change listener
   void bioNodeChange(){
-    //fieldSizeToggle()
+    if(bioNode.hasFocus == false){
+      //WE LOST FOCUS
+      if(expandedField.value){ 
+        //[CASE 3] (focus lost & editing false) [expanded GUARANTEED to be true]
+        if(editing.value){
+          //ERROR: we NEED gain focus for editing TRUE
+          print("---ERROR: We lost focus => expanded TRUE & editing TRUE");
+        }
+        else{
+          //VALUE SAVED (guaranteed)
+          print("DONE PRESS: We lost focus => expanded TRUE & editing FALSE");
 
-      /*
-      expandedField.value = !bioNode.hasFocus;
+          //OR this could have been triggerd by TOGGLE TAP starting with
+          //lost focus, expanding EITHER, editing false
+        }
+      }
+      else{ 
+        //[CASE 1] (focus lost & expanded false)
+        if(editing.value){
+          //ERROR: editing TRUE would trigger expanded TRUE (so it being possible should not happen)
+          print("---ERROR: We lost focus => expanded FALSE & editing TRUE"); 
+        }
+        else{
+          //VALUE SAVED (if editing before)
+          print("SHOW LESS: We lost focus => expanded FALSE & editing FALSE");
 
-      //save our value
-      if(bioNode.hasFocus) updateBio();
+          //OR this could have been triggerd by TOGGLE TAP starting with
+          //lost focus, expanding EITHER, editing false
+        }
+      }
+    }
+    else{
+      //WE GAINED FOCUS 
 
-      //focus on the right thing
-      var nodeToFocus;
-      if(bioNode.hasFocus) nodeToFocus = new FocusNode();
-      else nodeToFocus = bioNode;
-      FocusScope.of(context).requestFocus(nodeToFocus);
-        */
+      //2. Tapping on the field (which should be processed as a tap in all cases except)
+      //  a. when editing = true
 
-      //we did not touch the edit button
-      if(editing.value == false){
-        //but we are still trying to focus
-        if(bioNode.hasFocus == true){
-          //we didn't want focus, simply to open or close
-          FocusScope.of(context).requestFocus(new FocusNode());
-          fieldSizeToggle(); //toggle field
+      if(editing.value){
+        //[CASE 2] (focus gained & expanded true & editing true)
+        if(expandedField.value){
+          print("EDIT BUTTON: We gained focus => expanded TRUE & editing TRUE");
+        }
+        else{
+          print("---ERROR: We gained focus => expanded FALSE & editing TRUE");
         }
       }
       else{
+        //[CASE 4] (focus gained & editing false)
+        print("TOGGLE TAP: We gained focus => expanded " 
+        + expandedField.value.toString().toUpperCase() 
+        + " editing false");
 
-      }
-
-      //editing.value = bioNode.hasFocus;
-  }
-
-  //USED BY: only the button
-  void editDoneButtonFunction(){
-    editing.value = !editing.value;
-    if(bioNode.hasFocus){
-      updateBio();
-      FocusScope.of(context).requestFocus(new FocusNode());
-    }
-    else{
-      FocusScope.of(context).requestFocus(bioNode);
-      if(expandedField.value == false){
-        expandedField.value = true;
+        //we want to toggle
+        expandedField.value = !expandedField.value;
+        
+        //we want to process this as a tap
+        FocusScope.of(context).requestFocus(new FocusNode());
       }
     }
   }
