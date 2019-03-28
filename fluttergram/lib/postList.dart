@@ -11,8 +11,8 @@ import 'dart:convert';
 import 'package:async/async.dart';
 import 'package:http/http.dart' as http;
 
-//TODO... remove any force fetch functionality... this should only happen when you pull to refresh
-//NOTE: since post list is never on its own... its always call by profile OR posts... it doesnt have a pull to refresh
+//NOTE: the force to refresh here only works for POSTS
+//for PROFILE its own refresh indicator will override this one
 
 class PostList extends StatefulWidget {
   final Data appData;
@@ -58,10 +58,10 @@ class _PostListState extends State<PostList> {
     });
   }
 
-  void forceReload(){
-    print("force reloading post list");
+  Future forceReload(){
     forceFetch = true;
     setState(() {});
+    return new Future<bool>.value(true);
   }
 
   @override
@@ -69,24 +69,28 @@ class _PostListState extends State<PostList> {
     return FutureBuilder(
       future: (forceFetch) ? getData() : fetchData(),
       builder: (BuildContext context, AsyncSnapshot snapshot) {
+        print("future running again");
         if(snapshot.connectionState == ConnectionState.done){
           List list = snapshot.data;
-          return ListView.builder(
-            shrinkWrap: true,
-            physics: ClampingScrollPhysics(),
-            itemCount: list.length,
-            itemBuilder: (context, index) => Post(
-              appData: widget.appData,
-              postID: list[index]["id"],
-              caption: list[index]["caption"],
-              imageUrl: list[index]["image_url"],
-              timeStamp: list[index]["created_at"],
-              postOwnerID: list[index]["user_id"],
-              likeCount: list[index]["likes_count"],
-              commentCount: list[index]["comments_count"],
-              postOwnerEmail: list[index]["user_email"],
-              postOwnerImageUrl: list[index]["user_profile_image_url"],
-              startLiked: list[index]["liked"],
+          return RefreshIndicator(
+            onRefresh: () => forceReload(),
+            child: ListView.builder(
+              shrinkWrap: true,
+              physics: ClampingScrollPhysics(),
+              itemCount: list.length,
+              itemBuilder: (context, index) => Post(
+                appData: widget.appData,
+                postID: list[index]["id"],
+                caption: list[index]["caption"],
+                imageUrl: list[index]["image_url"],
+                timeStamp: list[index]["created_at"],
+                postOwnerID: list[index]["user_id"],
+                likeCount: list[index]["likes_count"],
+                commentCount: list[index]["comments_count"],
+                postOwnerEmail: list[index]["user_email"],
+                postOwnerImageUrl: list[index]["user_profile_image_url"],
+                startLiked: list[index]["liked"],
+              ),
             ),
           );
         }
@@ -283,33 +287,39 @@ class _PostState extends State<Post> {
             children: <Widget>[
               Padding(
                 padding: const EdgeInsets.fromLTRB(16, 4, 16, 4),
-                child: RichText(
-                  text: TextSpan(
-                    children: [
-                      TextSpan(
-                        text: (widget.postOwnerEmail).split('@')[0],
-                        style: TextStyle(
-                          fontWeight: FontWeight.bold,
-                          color: Colors.black,
+                child: Container(
+                  alignment: Alignment.topLeft,
+                  child: RichText(
+                    textAlign: TextAlign.left,
+                    text: TextSpan(
+                      children: [
+                        TextSpan(
+                          text: (widget.postOwnerEmail).split('@')[0],
+                          style: TextStyle(
+                            fontWeight: FontWeight.bold,
+                            color: Colors.black,
+                          ),
                         ),
-                      ),
-                      TextSpan(
-                        text: " " + widget.caption,
-                        style: TextStyle(color: Colors.grey),
-                      ),
-                    ]
+                        TextSpan(
+                          text: " " + widget.caption,
+                          style: TextStyle(color: Colors.grey),
+                        ),
+                      ]
+                    ),
                   ),
                 ),
               ),
-              Padding(
+              Container(
                 padding: const EdgeInsets.fromLTRB(16, 0, 16, 4),
+                alignment: Alignment.topLeft,
                 child: Text(
                   "View all comments", 
                   style: TextStyle(color: Colors.grey),
                 ),
               ),
-              Padding(
+              Container(
                 padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                alignment: Alignment.topLeft,
                 child: Text(
                   "posted on " + widget.timeStamp.toString(), 
                   style: TextStyle(
