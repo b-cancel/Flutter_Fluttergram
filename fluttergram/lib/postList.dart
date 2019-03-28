@@ -11,6 +11,9 @@ import 'dart:convert';
 import 'package:async/async.dart';
 import 'package:http/http.dart' as http;
 
+//TODO... remove any force fetch functionality... this should only happen when you pull to refresh
+//NOTE: since post list is never on its own... its always call by profile OR posts... it doesnt have a pull to refresh
+
 class PostList extends StatefulWidget {
   final Data appData;
 
@@ -84,7 +87,6 @@ class _PostListState extends State<PostList> {
               postOwnerEmail: list[index]["user_email"],
               postOwnerImageUrl: list[index]["user_profile_image_url"],
               startLiked: list[index]["liked"],
-              liked: new ValueNotifier(list[index]["liked"]),
             ),
           );
         }
@@ -94,12 +96,7 @@ class _PostListState extends State<PostList> {
   }
 }
 
-class Post extends StatelessWidget {
-  final showOptions = false;
-  final showComent = false;
-  final showShare = false;
-  final showBookmark = false;
-
+class Post extends StatefulWidget {
   final Data appData;
   final int postID;
   final String caption;
@@ -111,7 +108,6 @@ class Post extends StatelessWidget {
   final String postOwnerEmail;
   final String postOwnerImageUrl;
   final bool startLiked;
-  final ValueNotifier liked;
   Post({
     this.appData, //used to determine if we should have links to the other users
     this.postID,
@@ -124,12 +120,61 @@ class Post extends StatelessWidget {
     this.postOwnerEmail, //diplays in front of the caption
     this.postOwnerImageUrl, //used to know who owns the post
     this.startLiked,
-    this.liked,
   });
+
+  @override
+  _PostState createState() => _PostState();
+}
+
+class _PostState extends State<Post> {
+  final showOptions = false;
+
+  final showComent = false;
+
+  final showShare = false;
+
+  final showBookmark = false;
+
+  bool liked;
+  
+  @override
+  void initState() { 
+    super.initState();
+    liked = widget.startLiked;
+  }
 
   Data modForUser(appData, id){
     appData.whoOwnsPostsID = id;
     return appData;
+  }
+
+  Widget heartButton(){
+    if(liked){
+      return Icon(
+        FontAwesomeIcons.solidHeart,
+        color: Colors.red,
+      );
+    }
+    else{
+      return Icon(
+        FontAwesomeIcons.heart,
+      );
+    }
+  }
+
+  Widget likeCount(){
+    //adjust for client side changes without reloading
+    int actualLikes = widget.likeCount;
+    if(widget.startLiked != liked){
+      if(liked) actualLikes += 1;
+      else actualLikes -= 1;
+    }
+
+    //display actual likes
+    return Text(
+      actualLikes.toString() + ((actualLikes == 1) ? " like" : " likes"), 
+      style: TextStyle(fontWeight: FontWeight.bold),
+    );
   }
 
   @override
@@ -137,17 +182,16 @@ class Post extends StatelessWidget {
     var size = MediaQuery.of(context).size.width;
 
     void goToComments(){
-      print("going to comments for " + postID.toString());
       Navigator.push(
         context,
         MaterialPageRoute(
           builder: (context) => Comments(
-            postID: postID,
-            postOwnerImageUrl: postOwnerImageUrl, 
-            postOwnerEmail: postOwnerEmail, 
-            postCaption: caption,
-            postTimeStamp: timeStamp,
-            appData: appData,
+            postID: widget.postID,
+            postOwnerImageUrl: widget.postOwnerImageUrl, 
+            postOwnerEmail: widget.postOwnerEmail, 
+            postCaption: widget.caption,
+            postTimeStamp: widget.timeStamp,
+            appData: widget.appData,
           ),
         ),
       );
@@ -177,12 +221,12 @@ class Post extends StatelessWidget {
           ),
         ),
         GestureDetector(
-          onDoubleTap: () => like(postID, true),
+          onDoubleTap: () => like(widget.postID, true),
           child: Container(
             height: size,
             width: size,
             child: new Image.network(
-              imageUrl,
+              widget.imageUrl,
               fit: BoxFit.cover,
             ),
           ),
@@ -196,23 +240,8 @@ class Post extends StatelessWidget {
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: <Widget>[
                   GestureDetector(
-                    onTap: () => like(postID, !liked.value),
-                    child: AnimatedBuilder(
-                      animation: liked,
-                      builder: (BuildContext context, Widget child) {
-                        if(liked.value){
-                          return Icon(
-                            FontAwesomeIcons.solidHeart,
-                            color: Colors.red,
-                          );
-                        }
-                        else{
-                          return Icon(
-                            FontAwesomeIcons.heart,
-                          );
-                        }
-                      },
-                    ),
+                    onTap: () => like(widget.postID, !liked),
+                    child: heartButton(),
                   ),
                   Row(
                     children: <Widget>[
@@ -251,23 +280,7 @@ class Post extends StatelessWidget {
         ),
         Padding(
           padding: const EdgeInsets.fromLTRB(16, 0, 16, 0),
-          child: AnimatedBuilder(
-            animation: liked,
-            builder: (BuildContext context, Widget child) {
-              //adjust for client side changes without reloading
-              int actualLikes = likeCount;
-              if(startLiked != liked.value){
-                if(liked.value) actualLikes += 1;
-                else actualLikes -= 1;
-              }
-
-              //display actual likes
-              return Text(
-                actualLikes.toString() + ((actualLikes == 1) ? " like" : " likes"), 
-                style: TextStyle(fontWeight: FontWeight.bold),
-              );
-            },
-          ),
+          child: likeCount(),
         ),
         Padding(
           padding: const EdgeInsets.fromLTRB(16, 4, 16, 4),
@@ -275,14 +288,14 @@ class Post extends StatelessWidget {
             text: TextSpan(
               children: [
                 TextSpan(
-                  text: (postOwnerEmail).split('@')[0],
+                  text: (widget.postOwnerEmail).split('@')[0],
                   style: TextStyle(
                     fontWeight: FontWeight.bold,
                     color: Colors.black,
                   ),
                 ),
                 TextSpan(
-                  text: " " + caption,
+                  text: " " + widget.caption,
                   style: TextStyle(color: Colors.grey),
                 ),
               ]
@@ -302,7 +315,7 @@ class Post extends StatelessWidget {
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 16.0),
           child: Text(
-            "posted on " + timeStamp.toString(), 
+            "posted on " + widget.timeStamp.toString(), 
             style: TextStyle(
               color: Colors.grey,
               fontSize: 10,
@@ -320,17 +333,20 @@ class Post extends StatelessWidget {
   void like(postID, doWeLike){
     if(doWeLike){
       //make url
-      var urlMod = appData.url + "/api/v1/posts/" + postID.toString() + "/likes";
+      var urlMod = widget.appData.url + "/api/v1/posts/" + postID.toString() + "/likes";
 
       //use server
       http.post(
         urlMod, 
-        headers: {HttpHeaders.authorizationHeader: "Bearer " + appData.token}
+        headers: {HttpHeaders.authorizationHeader: "Bearer " + widget.appData.token}
       ).then((response){
         //process data
         if(response.statusCode == 200){ 
           print("liking succeed");
-          liked.value = doWeLike;
+          liked = doWeLike;
+          setState(() {
+            
+          });
           //TODO... get the count of user posts... user likes... and user comments
         }
         else{ 
@@ -341,17 +357,20 @@ class Post extends StatelessWidget {
     }
     else{
       //make url
-      var urlMod = appData.url + "/api/v1/posts/" + postID.toString() + "/likes";
+      var urlMod = widget.appData.url + "/api/v1/posts/" + postID.toString() + "/likes";
 
       //use server
       http.delete(
         urlMod, 
-        headers: {HttpHeaders.authorizationHeader: "Bearer " + appData.token}
+        headers: {HttpHeaders.authorizationHeader: "Bearer " + widget.appData.token}
       ).then((response){
         //process data
         if(response.statusCode == 200){ 
           print("UN liking succeed");
-          liked.value = doWeLike;
+          liked = doWeLike;
+          setState(() {
+            
+          });
           //TODO... get the count of user posts... user likes... and user comments
         }
         else{ 
@@ -363,10 +382,10 @@ class Post extends StatelessWidget {
   }
 
   Widget buildClickOrNoClick(BuildContext context) {
-    if(appData.whoOwnsPostsID == postOwnerID){
+    if(widget.appData.whoOwnsPostsID == widget.postOwnerID){
       return ProfileLink(
-        postOwnerImageUrl: postOwnerImageUrl, 
-        postOwnerEmail: postOwnerEmail,
+        postOwnerImageUrl: widget.postOwnerImageUrl, 
+        postOwnerEmail: widget.postOwnerEmail,
       );
     }
     else{
@@ -376,14 +395,14 @@ class Post extends StatelessWidget {
             context,
             MaterialPageRoute(
               builder: (context) => Profile(
-                appData: modForUser(appData, postOwnerID),
+                appData: modForUser(widget.appData, widget.postOwnerID),
               ),
             ),
           );
         },
         child: new ProfileLink(
-          postOwnerImageUrl: postOwnerImageUrl, 
-          postOwnerEmail: postOwnerEmail,
+          postOwnerImageUrl: widget.postOwnerImageUrl, 
+          postOwnerEmail: widget.postOwnerEmail,
         ),
       );
     }
