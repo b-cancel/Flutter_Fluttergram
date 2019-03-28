@@ -78,7 +78,7 @@ class _CommentsState extends State<Comments> {
           if(response.statusCode == 200){
             newCommentText.text = ""; 
             FocusScope.of(context).requestFocus(new FocusNode());
-            await forceReload();
+            Future.delayed(Duration(milliseconds: 250), () => forceReload());
           }
           else{ 
             print(urlMod + " post comment fail");
