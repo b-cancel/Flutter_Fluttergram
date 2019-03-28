@@ -143,11 +143,6 @@ class _PostState extends State<Post> {
     liked = widget.startLiked;
   }
 
-  Data modForUser(appData, id){
-    appData.whoOwnsPostsID = id;
-    return appData;
-  }
-
   Widget heartButton(){
     if(liked){
       return Icon(
@@ -282,44 +277,48 @@ class _PostState extends State<Post> {
           padding: const EdgeInsets.fromLTRB(16, 0, 16, 0),
           child: likeCount(),
         ),
-        Padding(
-          padding: const EdgeInsets.fromLTRB(16, 4, 16, 4),
-          child: RichText(
-            text: TextSpan(
-              children: [
-                TextSpan(
-                  text: (widget.postOwnerEmail).split('@')[0],
-                  style: TextStyle(
-                    fontWeight: FontWeight.bold,
-                    color: Colors.black,
-                  ),
-                ),
-                TextSpan(
-                  text: " " + widget.caption,
-                  style: TextStyle(color: Colors.grey),
-                ),
-              ]
-            ),
-          ),
-        ),
         GestureDetector(
           onTap: () => goToComments(),
-          child: Padding(
-            padding: const EdgeInsets.fromLTRB(16, 0, 16, 4),
-            child: Text(
-              "View all comments", 
-              style: TextStyle(color: Colors.grey),
-            ),
-          ),
-        ),
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16.0),
-          child: Text(
-            "posted on " + widget.timeStamp.toString(), 
-            style: TextStyle(
-              color: Colors.grey,
-              fontSize: 10,
-            ),
+          child: Column(
+            children: <Widget>[
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16, 4, 16, 4),
+                child: RichText(
+                  text: TextSpan(
+                    children: [
+                      TextSpan(
+                        text: (widget.postOwnerEmail).split('@')[0],
+                        style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          color: Colors.black,
+                        ),
+                      ),
+                      TextSpan(
+                        text: " " + widget.caption,
+                        style: TextStyle(color: Colors.grey),
+                      ),
+                    ]
+                  ),
+                ),
+              ),
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16, 0, 16, 4),
+                child: Text(
+                  "View all comments", 
+                  style: TextStyle(color: Colors.grey),
+                ),
+              ),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                child: Text(
+                  "posted on " + widget.timeStamp.toString(), 
+                  style: TextStyle(
+                    color: Colors.grey,
+                    fontSize: 10,
+                  ),
+                ),
+              ),
+            ],
           ),
         ),
         Container(
@@ -390,16 +389,7 @@ class _PostState extends State<Post> {
     }
     else{
       return GestureDetector(
-        onTap: (){
-          Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (context) => Profile(
-                appData: modForUser(widget.appData, widget.postOwnerID),
-              ),
-            ),
-          );
-        },
+        onTap: () => goToUserProfile(context, widget.appData, widget.postOwnerID),
         child: new ProfileLink(
           postOwnerImageUrl: widget.postOwnerImageUrl, 
           postOwnerEmail: widget.postOwnerEmail,

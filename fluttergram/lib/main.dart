@@ -1,10 +1,27 @@
 import 'dart:convert';
 import 'dart:io';
+import 'package:fluttergram/profile.dart';
 import 'package:http/http.dart' as http; 
 
 import 'package:flutter/material.dart';
 
 import 'home.dart';
+
+Data modForUser(appData, id){
+  appData.whoOwnsPostsID = id;
+  return appData;
+}
+
+void goToUserProfile(context, appData, profileUserID){
+  Navigator.push(
+    context,
+    MaterialPageRoute(
+      builder: (context) => Profile(
+        appData: modForUser(appData, profileUserID),
+      ),
+    ),
+  );
+}
 
 void main() => runApp(MyApp());
 

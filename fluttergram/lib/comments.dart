@@ -31,6 +31,7 @@ class Comments extends StatefulWidget {
 
 class _CommentsState extends State<Comments> {
   final AsyncMemoizer _memoizer = AsyncMemoizer();
+  bool forceFetch = false;
 
   fetchData() {
     return this._memoizer.runOnce(() async {
@@ -39,6 +40,9 @@ class _CommentsState extends State<Comments> {
   }
 
   Future getData() async{
+    //turn off force fetch in case we where triggered because of it
+    forceFetch = false;
+    
     //make url
     var urlMod = widget.appData.url + "/api/v1/posts/" + widget.postID.toString() + "/comments";
 
@@ -48,6 +52,7 @@ class _CommentsState extends State<Comments> {
       headers: {HttpHeaders.authorizationHeader: "Bearer " + widget.appData.token}
     ).then((response){
         if(response.statusCode == 200){
+          print("getting data");
           return jsonDecode(response.body);
         }
         else{ 
@@ -55,9 +60,6 @@ class _CommentsState extends State<Comments> {
           //TODO... trigger some visual error
         }
     });
-
-    //turn off force fetch in case we where triggered because of it
-    forceFetch = false;
   }
 
   TextEditingController newCommentText = new TextEditingController();
@@ -71,15 +73,11 @@ class _CommentsState extends State<Comments> {
       http.post(
         urlMod, 
         headers: {HttpHeaders.authorizationHeader: "Bearer " + widget.appData.token}
-      ).then((response){
+      ).then((response) async{
           if(response.statusCode == 200){
-            //Submit Field
             newCommentText.text = ""; 
             FocusScope.of(context).requestFocus(new FocusNode());
-
-            //Fetch New Comment
-            forceFetch = true;
-            setState(() {}); //should trigger re-fetching of data
+            await forceReload();
           }
           else{ 
             print(urlMod + " post comment fail");
@@ -90,7 +88,11 @@ class _CommentsState extends State<Comments> {
     //ELSE... we ignore your dumb request
   }
 
-  bool forceFetch = false;
+  Future forceReload(){
+    forceFetch = true;
+    setState(() {});
+    return new Future<bool>.value(true);
+  }
 
   final AsyncMemoizer fetchImageMemoi = AsyncMemoizer();
 
@@ -140,50 +142,57 @@ class _CommentsState extends State<Comments> {
       ),
       body: Stack(
         children: <Widget>[
-          FutureBuilder(
-            future: (forceFetch) ? getData() : fetchData(),
-            builder: (BuildContext context, AsyncSnapshot snapshot) {
-              if(snapshot.connectionState == ConnectionState.done){
-                //convert to list so we can actually use it
-                List list = snapshot.data;
+          RefreshIndicator(
+            onRefresh: () => forceReload(),
+            child: ListView(
+              children: <Widget>[
+                Container(
+                  padding: EdgeInsets.only(bottom: 8),
+                  decoration: BoxDecoration(
+                    border: Border(
+                      bottom: BorderSide(
+                        color: Colors.grey,
+                        width: 0.5,
+                      ),
+                    ),
+                  ),
+                  child: PostComment(
+                    appData: widget.appData,
+                    imageUrl: widget.postOwnerImageUrl,
+                    email: widget.postOwnerEmail,
+                    comment: widget.postCaption,
+                    timeStamp: widget.postTimeStamp,
+                  ),
+                ),
+                FutureBuilder(
+                  future: (forceFetch) ? getData() : fetchData(),
+                  builder: (BuildContext context, AsyncSnapshot snapshot) {
+                    if(snapshot.connectionState == ConnectionState.done){
+                      //convert to list so we can actually use it
+                      List list = snapshot.data;
 
-                //return the data
-                return ListView(
-                  children: <Widget>[
-                    Container(
-                      padding: EdgeInsets.only(bottom: 8),
-                      decoration: BoxDecoration(
-                        border: Border(
-                          bottom: BorderSide(
-                            color: Colors.grey,
-                            width: 0.5,
-                          ),
+                      print(list.length.toString() + " comments");
+
+                      //return the data
+                      return ListView.builder(
+                        shrinkWrap: true,
+                        physics: ClampingScrollPhysics(),
+                        itemCount: list.length,
+                        itemBuilder: (context, index) => PostComment(
+                          appData: widget.appData,
+                          imageUrl: list[index]["user"]["profile_image_url"],
+                          email: list[index]["user"]["email"],
+                          userID: list[index]["user_id"],
+                          comment: list[index]["text"],
+                          timeStamp: list[index]["created_at"],
                         ),
-                      ),
-                      child: PostComment(
-                        appData: widget.appData,
-                        imageUrl: widget.postOwnerImageUrl,
-                        email: widget.postOwnerEmail,
-                        comment: widget.postCaption,
-                        timeStamp: widget.postTimeStamp,
-                      ),
-                    ),
-                    ListView.builder(
-                      shrinkWrap: true,
-                      physics: ClampingScrollPhysics(),
-                      itemCount: list.length,
-                      itemBuilder: (context, index) => PostComment(
-                        appData: widget.appData,
-                        userID: list[index]["user_id"],
-                        comment: list[index]["text"],
-                        timeStamp: list[index]["created_at"],
-                      ),
-                    ),
-                  ],
-                );
-              }
-              else return CustomLoading();
-            },
+                      );
+                    }
+                    else return CustomLoading();
+                  },
+                ),
+              ],
+            ),
           ),
           Positioned(
             bottom: 0.0,
@@ -210,7 +219,7 @@ class _CommentsState extends State<Comments> {
                   icon: Container(
                     padding: const EdgeInsets.fromLTRB(8, 8, 0, 8),
                     child: FutureBuilder(
-                      future: getImageData(),
+                      future: fetchImageData(),
                       builder: (BuildContext context, AsyncSnapshot snapshot) {
                         //generate the url
                         var imageUrl = "";
@@ -271,7 +280,6 @@ class PostComment extends StatefulWidget {
   final String timeStamp;
 
   const PostComment({
-    //TODO... add functionality
     this.appData, //used to allow edit and delete
     this.userID,
     this.imageUrl,
@@ -286,56 +294,6 @@ class PostComment extends StatefulWidget {
 }
 
 class _PostCommentState extends State<PostComment> {
-  final AsyncMemoizer fetchImageMemoi = AsyncMemoizer();
-
-  fetchImageData() {
-    return this.fetchImageMemoi.runOnce(() async {
-      return await getImageData();
-    });
-  }
-
-  Future getImageData() async{
-    var urlMod = widget.appData.url + "/api/v1/users/" + widget.userID.toString();
-
-    return await http.get(
-      urlMod, 
-      headers: {HttpHeaders.authorizationHeader: "Bearer " + widget.appData.token}
-    ).then((response){
-        if(response.statusCode == 200){
-          return jsonDecode(response.body);
-        }
-        else{ 
-          print(urlMod + " get image fail");
-          //TODO... trigger some visual error
-        }
-    });
-  }
-
-  final AsyncMemoizer fetchEmailMemoi = AsyncMemoizer();
-
-  fetchEmailData() {
-    return this.fetchEmailMemoi.runOnce(() async {
-      return await getEmailData();
-    });
-  }
-
-  Future getEmailData() async{
-    var urlMod = widget.appData.url + "/api/v1/users/" + widget.userID.toString();
-
-    return await http.get(
-      urlMod, 
-      headers: {HttpHeaders.authorizationHeader: "Bearer " + widget.appData.token}
-    ).then((response){
-        if(response.statusCode == 200){
-          return jsonDecode(response.body);
-        }
-        else{ 
-          print(urlMod + " get email fail");
-          //TODO... trigger some visual error
-        }
-    });
-  }
-
   @override
   Widget build(BuildContext context) {
     return Padding(
@@ -343,41 +301,7 @@ class _PostCommentState extends State<PostComment> {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.start,
         children: <Widget>[
-          (widget.imageUrl == null)
-          ? FutureBuilder(
-            future: fetchImageData(),
-            builder: (BuildContext context, AsyncSnapshot snapshot) {
-              //generate the url
-              var imageUrl = "";
-              if(snapshot.connectionState == ConnectionState.done){
-                if(snapshot.data["profile_image_url"] == null){
-                  imageUrl = "https://prd-wret.s3-us-west-2.amazonaws.com/assets/palladium/production/s3fs-public/thumbnails/image/Placeholder_person.png";
-                }
-                else{
-                  imageUrl = snapshot.data["profile_image_url"];
-                }
-              }
-              else{
-                imageUrl = "https://prd-wret.s3-us-west-2.amazonaws.com/assets/palladium/production/s3fs-public/thumbnails/image/Placeholder_person.png";
-              }
-
-              //display
-              return new Container(
-                height: 40.0,
-                width: 40.0,
-                decoration: new BoxDecoration(
-                  shape: BoxShape.circle,
-                  image: new DecorationImage(
-                    fit: BoxFit.fill,
-                    image: new NetworkImage(
-                      imageUrl,
-                    ),
-                  ),
-                ),
-              );
-            },
-          )
-          : Container(
+          Container(
             height: 40.0,
             width: 40.0,
             decoration: new BoxDecoration(
@@ -398,42 +322,7 @@ class _PostCommentState extends State<PostComment> {
               mainAxisAlignment: MainAxisAlignment.start,
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: <Widget>[
-                (widget.email == null)
-                ? FutureBuilder(
-                  future: getEmailData(),
-                  builder: (BuildContext context, AsyncSnapshot snapshot) {
-                    if(snapshot.connectionState ==ConnectionState.done){
-                      return RichText(
-                        textAlign: TextAlign.left,
-                        text: TextSpan(
-                          children: [
-                            TextSpan(
-                              text: (snapshot.data["email"]).split('@')[0],
-                              style: TextStyle(
-                                fontWeight: FontWeight.bold,
-                                color: Colors.black,
-                              ),
-                            ),
-                            TextSpan(
-                              text: " " + widget.comment,
-                              style: TextStyle(color: Colors.grey),
-                            ),
-                          ]
-                        ),
-                      );
-                    }
-                    else{
-                      return RichText(
-                        textAlign: TextAlign.left,
-                        text: TextSpan(
-                          text: widget.comment,
-                          style: TextStyle(color: Colors.grey),
-                        ),
-                      );
-                    }
-                  },
-                )
-                : RichText(
+                RichText(
                   textAlign: TextAlign.left,
                   text: TextSpan(
                     children: [
