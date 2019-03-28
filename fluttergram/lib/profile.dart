@@ -13,6 +13,7 @@ import 'package:fluttergram/postList.dart';
 import 'dart:convert';
 import 'dart:io';
 import 'package:http/http.dart' as http;
+import 'package:http_parser/http_parser.dart'; 
 import 'package:image_picker/image_picker.dart';
 import 'package:dio/dio.dart';
 
@@ -34,17 +35,15 @@ class Profile extends StatefulWidget {
 }
 
 class _ProfileState extends State<Profile> {
-  final AsyncMemoizer mainMemoizer = AsyncMemoizer();
+  final AsyncMemoizer _memoizer = AsyncMemoizer();
 
-  bool mainForceFetch = false;
-
-  fetchMainData() {
-    return this.mainMemoizer.runOnce(() async {
-      return await getMainData();
+  fetchData() {
+    return this._memoizer.runOnce(() async {
+      return await getData();
     });
   }
 
-  Future getMainData() async{
+  Future getData() async{
     //retreive data from server
     var urlMod = widget.appData.url + "/api/v1/users/" + widget.appData.whoOwnsPostsID.toString();
 
@@ -59,8 +58,6 @@ class _ProfileState extends State<Profile> {
 
       //process data
       if(response.statusCode == 200){ 
-        mainForceFetch = false; //in case it was triggered by this
-
         return jsonDecode(response.body);
         //TODO... get the count of user posts... user likes... and user comments
       }
@@ -71,14 +68,56 @@ class _ProfileState extends State<Profile> {
     });
   }
 
-  void forceMainReload(){
-    print("force reloading profile");
-    mainForceFetch = true;
-    setState(() {});
+  @override
+  Widget build(BuildContext context) {
+    //show loading in the meantime
+    return FutureBuilder(
+      future: fetchData(),
+      builder: (BuildContext context, AsyncSnapshot snapshot) {
+        if(snapshot.connectionState == ConnectionState.done){
+          return UserProfilePage(
+            //we only edit our own page
+            editable: (widget.appData.whoOwnsPostsID == widget.appData.currentUserID),
+            appData: widget.appData,
+            email: snapshot.data["email"],
+            bio: snapshot.data["bio"],
+            imageUrl: snapshot.data["profile_image_url"],
+            spawnTime: snapshot.data["created_at"],
+            callback: widget.callback,
+          );
+        }
+        else return CustomLoading();
+      },
+    );
   }
+}
 
-  //---
+//-------------------------VISUAL DATA DISPLAY-------------------------
 
+class UserProfilePage extends StatefulWidget {
+  final bool editable;
+  final Data appData;
+  final String email;
+  final String imageUrl;
+  final String bio;
+  final String spawnTime;
+  final Function callback;
+
+  UserProfilePage({
+    this.editable,
+    this.appData,
+    this.email,
+    this.imageUrl,
+    this.bio,
+    this.spawnTime,
+    @required this.callback,
+  });
+
+  @override
+  _UserProfilePageState createState() => _UserProfilePageState();
+}
+
+class _UserProfilePageState extends State<UserProfilePage> {
   ValueNotifier<String> imageUrl;
   ValueNotifier<bool> expandedField;
 
@@ -90,8 +129,9 @@ class _ProfileState extends State<Profile> {
     fontSize: 16.0,
   );
 
-  void initAfterFutureBuilder(newImageUrl, bio){
-    imageUrl = new ValueNotifier(newImageUrl);
+  @override
+  void initState(){
+    imageUrl = new ValueNotifier(widget.imageUrl);
     expandedField = new ValueNotifier(false);
 
     bioNode.addListener((){
@@ -99,343 +139,207 @@ class _ProfileState extends State<Profile> {
     });
 
     //set the initial value of our text field
-    bioController.text = bio;
+    bioController.text = widget.bio;
 
-    getPosts();
+    super.initState();
   }
 
-  bool forceFetch = false;
-
-  ValueNotifier<int> postCount = new ValueNotifier(0);
-  ValueNotifier<int> commentCount = new ValueNotifier(0);
-  ValueNotifier<int> likeCount = new ValueNotifier(0);
-
-  Future getPosts() async{
-    //get all the posts
-    var urlMod = widget.appData.url + "/api/v1/posts";
-
-    return await http.get(
-      urlMod, 
-      headers: {HttpHeaders.authorizationHeader: "Bearer " + widget.appData.token}
-    ).then((response) async{
-        if(response.statusCode == 200){
-          forceFetch = false; //in case we were triggered by this
-          
-          return await processPosts(jsonDecode(response.body));
-        }
-        else{ 
-          print(urlMod + " get posts fail");
-          //TODO... trigger some visual error
-        }
+  Future<Null> refresh() {
+    Completer<Null> completer = new Completer<Null>();
+    new Timer(new Duration(seconds: 3), () {
+      completer.complete();
     });
+    return completer.future;
   }
-
-  Future processPosts(posts) async{
-    List list = posts;
-    for(int postID = 0; postID < list.length; postID+=1){
-      //update postCount
-      if(list[postID]["user_id"] == widget.appData.whoOwnsPostsID){
-        postCount.value += 1;
-      }
-
-      //get all comments from this userID from this particular post
-      commentCount.value += await getComments(list[postID]["id"]);
-
-      //get all the likes from this userID from this particular post
-      likeCount.value += await getLikes(list[postID]["id"]);
-    }
-
-    //return so this thing stop running
-    return "";
-  }
-
-  Future getComments(thisPostID) async{
-    var urlMod = widget.appData.url + "/api/v1/posts/" + thisPostID.toString() + "/comments";
-
-    return await http.get(
-      urlMod, 
-      headers: {HttpHeaders.authorizationHeader: "Bearer " + widget.appData.token}
-    ).then((response) async{
-        if(response.statusCode == 200){
-          List comments = jsonDecode(response.body);
-          int commentCount = 0;
-          for(int commentID = 0; commentID < comments.length; commentID += 1){
-            if(comments[commentID]["user_id"] == widget.appData.whoOwnsPostsID){
-              commentCount += 1;
-            }
-          }
-          return commentCount;
-        }
-        else{ 
-          print(urlMod + " get comments fail");
-          //TODO... trigger some visual error
-        }
-    });
-  }
-
-  Future getLikes(thisPostID) async{
-    var urlMod = widget.appData.url + "/api/v1/posts/" + thisPostID.toString() + "/likes";
-
-    return await http.get(
-      urlMod, 
-      headers: {HttpHeaders.authorizationHeader: "Bearer " + widget.appData.token}
-    ).then((response) async{
-        if(response.statusCode == 200){
-          List likes = jsonDecode(response.body);
-          int likesCount = 0;
-          for(int likeID = 0; likeID < likes.length; likeID += 1){
-            if(likes[likeID]["user_id"] == widget.appData.whoOwnsPostsID){
-              likesCount += 1;
-            }
-          }
-          return likesCount;
-        }
-        else{ 
-          print(urlMod + " get like fail");
-          //TODO... trigger some visual error
-        }
-    });
-  }
-
-  //---
 
   @override
   Widget build(BuildContext context) {
-    bool editable = (widget.appData.whoOwnsPostsID == widget.appData.currentUserID);
-    
-    //show loading in the meantime
-    return FutureBuilder(
-      future: (mainForceFetch) ? getMainData() : fetchMainData(),
-      builder: (BuildContext context, AsyncSnapshot snapshot) {
-        if(snapshot.connectionState == ConnectionState.done){
-          //grab our vars from the json
-          String email = snapshot.data["email"];
-          String bio = snapshot.data["bio"];
-          String spawnTime = snapshot.data["created_at"];
-
-          //create our new call back
-          Function callback = (){
-            forceMainReload(); //force reload profile
-            //IF this profile was called from a postList then we will reload that
-            widget.callback(); 
-          };
-
-          //initialize important stuff
-          initAfterFutureBuilder(snapshot.data["profile_image_url"], bio);
-
-          return Scaffold(
-            appBar: PreferredSize(
-              preferredSize: Size.fromHeight(45),
-              child: AppBar(
-                backgroundColor: new Color(0xfff8faf8),
-                elevation: 1.0,
-                leading: (editable) 
-                ? Container() 
-                : IconButton(
-                  icon: const BackButtonIcon(),
-                  color: Colors.black,
-                  tooltip: MaterialLocalizations.of(context).backButtonTooltip,
-                  onPressed: () {
-                    Navigator.maybePop(context).then((value){
-                      widget.callback(); //DOES NOT NEED TO REFRESH US (we are leaving)
-                    });
-                  }
-                ),
-                centerTitle: false,
-                title: Transform.translate(
-                  offset: Offset((editable) ? -60 : 0, 0),
-                  child: Container(
-                    child: new Row(
-                      mainAxisSize: MainAxisSize.min,
-                      mainAxisAlignment: MainAxisAlignment.start,
-                      children: <Widget>[
-                        Padding(
-                          padding: (editable)
-                          ? EdgeInsets.only(right: 4.0)
-                          : EdgeInsets.all(0),
-                          child: new Text(
-                            (email).split('@')[0],
-                            style: TextStyle(
-                              color: Colors.black,
-                              fontSize: 16,
-                            ),
-                          ),
-                        ),
-                        (editable == false) 
-                        ? Container()
-                        : new Icon(
-                          FontAwesomeIcons.chevronDown,
-                          size: 8,
-                        ) ,
-                      ],
+    return Scaffold(
+      appBar: PreferredSize(
+        preferredSize: Size.fromHeight(45),
+        child: AppBar(
+          backgroundColor: new Color(0xfff8faf8),
+          elevation: 1.0,
+          leading: (widget.editable) 
+          ? Container() 
+          : IconButton(
+            icon: const BackButtonIcon(),
+            color: Colors.black,
+            tooltip: MaterialLocalizations.of(context).backButtonTooltip,
+            onPressed: () {
+              Navigator.maybePop(context).then((value){
+                widget.callback();
+              });
+            }
+          ),
+          centerTitle: false,
+          title: Transform.translate(
+            offset: Offset((widget.editable) ? -60 : 0, 0),
+            child: Container(
+              child: new Row(
+                mainAxisSize: MainAxisSize.min,
+                mainAxisAlignment: MainAxisAlignment.start,
+                children: <Widget>[
+                  Padding(
+                    padding: (widget.editable)
+                    ? EdgeInsets.only(right: 4.0)
+                    : EdgeInsets.all(0),
+                    child: new Text(
+                      (widget.email).split('@')[0],
+                      style: TextStyle(
+                        color: Colors.black,
+                        fontSize: 16,
+                      ),
                     ),
                   ),
-                ),
+                  (widget.editable == false) 
+                  ? Container()
+                  : new Icon(
+                    FontAwesomeIcons.chevronDown,
+                    size: 8,
+                  ) ,
+                ],
               ),
             ),
-            body: Container(
-              child: ListView(
-                children: <Widget>[
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: <Widget>[
-                      Row(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: <Widget>[
-                          Container(
-                            padding: EdgeInsets.all(16),
-                            child: Container(
-                              height: (editable) ? 100 : 75,
-                              width: (editable) ? 100 : 75,
-                              child: Stack(
-                                children: <Widget>[
-                                  AnimatedBuilder(
-                                    animation: imageUrl,
-                                    builder: (context, child){
-                                      return Container(
-                                        decoration: BoxDecoration(
-                                          image: DecorationImage(
-                                            image: new NetworkImage(imageUrl.value),
-                                            fit: BoxFit.cover,
-                                          ),
-                                          borderRadius: BorderRadius.circular(100.0),
-                                          border: Border.all(
-                                            color: Colors.black,
-                                            width: 1.0,
-                                          ),
-                                        ),
-                                      );
-                                    },
+          ),
+        ),
+      ),
+      body: Container(
+        child: ListView(
+          children: <Widget>[
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: <Widget>[
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: <Widget>[
+                    Container(
+                      padding: EdgeInsets.all(16),
+                      child: Container(
+                        height: (widget.editable) ? 100 : 75,
+                        width: (widget.editable) ? 100 : 75,
+                        child: Stack(
+                          children: <Widget>[
+                            AnimatedBuilder(
+                              animation: imageUrl,
+                              builder: (context, child){
+                                return Container(
+                                  decoration: BoxDecoration(
+                                    image: DecorationImage(
+                                      image: new NetworkImage(imageUrl.value),
+                                      fit: BoxFit.cover,
+                                    ),
+                                    borderRadius: BorderRadius.circular(100.0),
+                                    border: Border.all(
+                                      color: Colors.black,
+                                      width: 1.0,
+                                    ),
                                   ),
-                                  (editable == false) 
-                                  ? Container()
-                                  : new Stack(
-                                    children: <Widget>[
-                                      Align(
-                                        alignment: Alignment.bottomRight,
-                                        child: Container(
-                                          padding: EdgeInsets.all(4),
-                                          decoration: BoxDecoration(
-                                            borderRadius: BorderRadius.circular(80.0),
-                                            color: Colors.blue,
-                                            border: Border.all(
-                                              color: Colors.white,
-                                              width: 2,
-                                            ),
-                                          ),
-                                          child: Icon(
-                                            Icons.edit,
-                                            color: Colors.white,
-                                            size: 16,
-                                          ),
-                                        ),
-                                      ),
-                                      FlatButton(
-                                        shape: CircleBorder(),
-                                        onPressed: () => imagePicker(),
-                                        child: Container(),
-                                      ),
-                                    ],
-                                  ),
-                                ],
-                              ),
+                                );
+                              },
                             ),
-                          ),
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.stretch,
+                            (widget.editable == false) 
+                            ? Container()
+                            : new Stack(
                               children: <Widget>[
-                                Padding(
-                                  padding: EdgeInsets.only(top: 16, right: 16),
-                                  child: AnimatedBuilder(
-                                    animation: postCount,
-                                    builder: (BuildContext context, Widget child) {
-                                      return AnimatedBuilder(
-                                        animation: commentCount,
-                                        builder: (BuildContext context, Widget child) {
-                                          return AnimatedBuilder(
-                                            animation: likeCount,
-                                            builder: (BuildContext context, Widget child) {
-                                              return new Row(
-                                                mainAxisAlignment: MainAxisAlignment.spaceAround,
-                                                children: <Widget>[
-                                                  Stat(number: postCount.value.toString(), text: "Posts"),
-                                                  Stat(number: commentCount.value.toString(), text: "Comments"),
-                                                  Stat(number: likeCount.value.toString(), text: "Likes"),
-                                                ],
-                                              );
-                                            },
-                                          );
-                                        },
-                                      );
-                                    },
+                                Align(
+                                  alignment: Alignment.bottomRight,
+                                  child: Container(
+                                    decoration: BoxDecoration(
+                                      borderRadius: BorderRadius.circular(80.0),
+                                      color: Colors.blue,
+                                      border: Border.all(
+                                        color: Colors.blue,
+                                        width: 4.0,
+                                      ),
+                                    ),
+                                    child: Icon(
+                                      Icons.edit,
+                                      color: Colors.white,
+                                      size: 16,
+                                    ),
                                   ),
                                 ),
-                                (editable == false)
-                                ? Container()
-                                : Padding(
-                                  padding: const EdgeInsets.only(right: 16.0),
-                                  child: AnimatedBuilder(
-                                    animation: editing,
-                                    builder: (BuildContext context, Widget child) {
-                                      return editDoneButton();
-                                    },
-                                  ),
-                                )
+                                FlatButton(
+                                  shape: CircleBorder(),
+                                  onPressed: () => imagePicker(),
+                                  child: Container(),
+                                ),
                               ],
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: <Widget>[
+                          new ProfileData(
+                            appData: widget.appData,
+                            userID: widget.appData.whoOwnsPostsID,
+                            posts: 12,
+                            comments: 35,
+                            likes: 1283,
+                          ),
+                          (widget.editable == false)
+                          ? Container()
+                          : Padding(
+                            padding: const EdgeInsets.only(right: 16.0),
+                            child: AnimatedBuilder(
+                              animation: editing,
+                              builder: (BuildContext context, Widget child) {
+                                return editDoneButton();
+                              },
                             ),
                           )
                         ],
                       ),
-                      AnimatedBuilder(
-                        animation: expandedField,
-                        builder: (BuildContext context, Widget child) {
-                          return Column(
-                            children: <Widget>[
-                              ClipRect(
-                                child: Padding(
-                                  padding: const EdgeInsets.only(left: 16, right: 16),
-                                  child: TextFormField(
-                                    focusNode: bioNode,
-                                    controller: bioController,
-                                    style: bioTextStyle,
-                                    maxLines: (expandedField.value) ? 7 : 1,
-                                    decoration: InputDecoration(
-                                      border: InputBorder.none,
-                                    ),
-                                  ),
-                                ),
+                    )
+                  ],
+                ),
+                AnimatedBuilder(
+                  animation: expandedField,
+                  builder: (BuildContext context, Widget child) {
+                    return Column(
+                      children: <Widget>[
+                        ClipRect(
+                          child: Padding(
+                            padding: const EdgeInsets.only(left: 16, right: 16),
+                            child: TextFormField(
+                              focusNode: bioNode,
+                              controller: bioController,
+                              style: bioTextStyle,
+                              maxLines: (expandedField.value) ? 7 : 1,
+                              decoration: InputDecoration(
+                                border: InputBorder.none,
                               ),
-                              GestureDetector(
-                                onTap:  () => fieldSizeToggle(),
-                                behavior: HitTestBehavior.opaque,
-                                child: Container(
-                                  padding: EdgeInsets.only(right: 16),
-                                  alignment: Alignment.bottomRight,
-                                  child: new Text(
-                                    (expandedField.value) ? "Show Less" : "Show More",
-                                  ),
-                                ),
-                              ),
-                            ],
-                          );
-                        },
-                      ),
-                      PostList(
-                        appData: widget.appData,
-                        callback: (){
-                          callback();
-                        },
-                      ),
-                    ],
-                  ),
-                ],
-              ),
+                            ),
+                          ),
+                        ),
+                        GestureDetector(
+                          onTap:  () => fieldSizeToggle(),
+                          behavior: HitTestBehavior.opaque,
+                          child: Container(
+                            padding: EdgeInsets.only(right: 16),
+                            alignment: Alignment.bottomRight,
+                            child: new Text(
+                              (expandedField.value) ? "Show Less" : "Show More",
+                            ),
+                          ),
+                        ),
+                      ],
+                    );
+                  },
+                ),
+                PostList(
+                  appData: widget.appData,
+                ),
+              ],
             ),
-          );
-        }
-        else return CustomLoading();
-      },
+          ],
+        ),
+      ),
     );
   }
 
@@ -669,7 +573,163 @@ class _ProfileState extends State<Profile> {
       }
     }
   }
+
   //-------------------------VERY DELICATE SYSTEM END-------------------------
+}
+
+class ProfileData extends StatefulWidget {
+  final Data appData;
+  final int userID;
+  final int posts;
+  final int comments;
+  final int likes;
+
+  const ProfileData({
+    @required this.appData,
+    @required this.userID,
+    this.posts,
+    this.comments,
+    this.likes,
+    Key key,
+  }) : super(key: key);
+
+  @override
+  _ProfileDataState createState() => _ProfileDataState();
+}
+
+class _ProfileDataState extends State<ProfileData> {
+  final AsyncMemoizer _memoizer = AsyncMemoizer();
+
+  fetchData() {
+    return this._memoizer.runOnce(() async {
+      return await getData();
+    });
+  }
+
+  Future getData() async{
+    //get all the posts
+    var urlMod = widget.appData.url + "/api/v1/posts";
+
+    return await http.get(
+      urlMod, 
+      headers: {HttpHeaders.authorizationHeader: "Bearer " + widget.appData.token}
+    ).then((response) async{
+        if(response.statusCode == 200){
+          return await processPosts(jsonDecode(response.body));
+        }
+        else{ 
+          print(urlMod + " get posts fail");
+          //TODO... trigger some visual error
+        }
+    });
+  }
+
+  ValueNotifier<int> postCount = new ValueNotifier(0);
+  ValueNotifier<int> commentCount = new ValueNotifier(0);
+  ValueNotifier<int> likeCount = new ValueNotifier(0);
+
+  Future processPosts(posts) async{
+    List list = posts;
+    for(int postID = 0; postID < list.length; postID+=1){
+      //update postCount
+      if(list[postID]["user_id"] == widget.userID){
+        postCount.value += 1;
+      }
+
+      //get all comments from this userID from this particular post
+      commentCount.value += await getComments(list[postID]["id"]);
+
+      //get all the likes from this userID from this particular post
+      likeCount.value += await getLikes(list[postID]["id"]);
+    }
+
+    //return so this thing stop running
+    return "";
+  }
+
+  Future getComments(thisPostID) async{
+    var urlMod = widget.appData.url + "/api/v1/posts/" + thisPostID.toString() + "/comments";
+
+    return await http.get(
+      urlMod, 
+      headers: {HttpHeaders.authorizationHeader: "Bearer " + widget.appData.token}
+    ).then((response) async{
+        if(response.statusCode == 200){
+          List comments = jsonDecode(response.body);
+          int commentCount = 0;
+          for(int commentID = 0; commentID < comments.length; commentID += 1){
+            if(comments[commentID]["user_id"] == widget.userID){
+              commentCount += 1;
+            }
+          }
+          return commentCount;
+        }
+        else{ 
+          print(urlMod + " get comments fail");
+          //TODO... trigger some visual error
+        }
+    });
+  }
+
+  Future getLikes(thisPostID) async{
+    var urlMod = widget.appData.url + "/api/v1/posts/" + thisPostID.toString() + "/likes";
+
+    return await http.get(
+      urlMod, 
+      headers: {HttpHeaders.authorizationHeader: "Bearer " + widget.appData.token}
+    ).then((response) async{
+        if(response.statusCode == 200){
+          List likes = jsonDecode(response.body);
+          int likesCount = 0;
+          for(int likeID = 0; likeID < likes.length; likeID += 1){
+            if(likes[likeID]["user_id"] == widget.userID){
+              likesCount += 1;
+            }
+          }
+          return likesCount;
+        }
+        else{ 
+          print(urlMod + " get like fail");
+          //TODO... trigger some visual error
+        }
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: EdgeInsets.only(top: 16, right: 16),
+      child: FutureBuilder(
+        future: fetchData(),
+        builder: (BuildContext context, AsyncSnapshot snapshot) {
+          //NOTE: using animated builders here updates the values as they are updated by the server
+          return AnimatedBuilder(
+            animation: postCount,
+            builder: (BuildContext context, Widget child) {
+              return AnimatedBuilder(
+                animation: commentCount,
+                builder: (BuildContext context, Widget child) {
+                  return AnimatedBuilder(
+                    animation: likeCount,
+                    builder: (BuildContext context, Widget child) {
+                      return new Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceAround,
+                        children: <Widget>[
+                          Stat(number: postCount.value.toString(), text: "Posts"),
+                          Stat(number: commentCount.value.toString(), text: "Comments"),
+                          Stat(number: likeCount.value.toString(), text: "Likes"),
+                        ],
+                      );
+                    },
+                  );
+                },
+              );
+            },
+          );
+        },
+      ),
+    );
+  }
 }
 
 class Stat extends StatelessWidget {

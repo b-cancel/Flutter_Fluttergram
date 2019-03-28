@@ -3,6 +3,8 @@ import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:fluttergram/main.dart';
+import 'package:fluttergram/profile.dart';
+import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 
 import 'dart:convert';
 import 'package:async/async.dart';
@@ -34,8 +36,6 @@ class Comments extends StatefulWidget {
 class _CommentsState extends State<Comments> {
   final AsyncMemoizer _memoizer = AsyncMemoizer();
 
-  bool forceFetch = false;
-
   fetchData() {
     return this._memoizer.runOnce(() async {
       return await getData();
@@ -52,9 +52,6 @@ class _CommentsState extends State<Comments> {
       headers: {HttpHeaders.authorizationHeader: "Bearer " + widget.appData.token}
     ).then((response){
         if(response.statusCode == 200){
-          //turn off force fetch in case we where triggered because of it
-          forceFetch = false;
-
           return jsonDecode(response.body);
         }
         else{ 
@@ -62,6 +59,9 @@ class _CommentsState extends State<Comments> {
           //TODO... trigger some visual error
         }
     });
+
+    //turn off force fetch in case we where triggered because of it
+    forceFetch = false;
   }
 
   TextEditingController newCommentText = new TextEditingController();
@@ -93,6 +93,8 @@ class _CommentsState extends State<Comments> {
     }
     //ELSE... we ignore your dumb request
   }
+
+  bool forceFetch = false;
 
   final AsyncMemoizer fetchImageMemoi = AsyncMemoizer();
 
