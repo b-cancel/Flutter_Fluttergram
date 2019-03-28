@@ -13,7 +13,6 @@ import 'package:fluttergram/postList.dart';
 import 'dart:convert';
 import 'dart:io';
 import 'package:http/http.dart' as http;
-import 'package:http_parser/http_parser.dart'; 
 import 'package:image_picker/image_picker.dart';
 import 'package:dio/dio.dart';
 
@@ -23,12 +22,10 @@ Dio dio = new Dio();
 
 class Profile extends StatefulWidget {
   final Data appData;
-  final Function callback;
 
   Profile({
     Key key,
     this.appData,
-    @required this.callback,
   }) : super(key: key);
 
   _ProfileState createState() => _ProfileState();
@@ -83,7 +80,6 @@ class _ProfileState extends State<Profile> {
             bio: snapshot.data["bio"],
             imageUrl: snapshot.data["profile_image_url"],
             spawnTime: snapshot.data["created_at"],
-            callback: widget.callback,
           );
         }
         else return CustomLoading();
@@ -101,7 +97,6 @@ class UserProfilePage extends StatefulWidget {
   final String imageUrl;
   final String bio;
   final String spawnTime;
-  final Function callback;
 
   UserProfilePage({
     this.editable,
@@ -110,7 +105,6 @@ class UserProfilePage extends StatefulWidget {
     this.imageUrl,
     this.bio,
     this.spawnTime,
-    @required this.callback,
   });
 
   @override
@@ -168,7 +162,6 @@ class _UserProfilePageState extends State<UserProfilePage> {
             tooltip: MaterialLocalizations.of(context).backButtonTooltip,
             onPressed: () {
               Navigator.maybePop(context).then((value){
-                widget.callback();
               });
             }
           ),

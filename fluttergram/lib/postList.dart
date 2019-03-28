@@ -7,7 +7,6 @@ import 'package:fluttergram/main.dart';
 import 'package:fluttergram/profile.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 
-import 'dart:async';
 import 'dart:convert';
 import 'package:async/async.dart';
 import 'package:http/http.dart' as http;
@@ -86,7 +85,6 @@ class _PostListState extends State<PostList> {
               postOwnerImageUrl: list[index]["user_profile_image_url"],
               startLiked: list[index]["liked"],
               liked: new ValueNotifier(list[index]["liked"]),
-              callback: () => forceReload(),
             ),
           );
         }
@@ -114,7 +112,6 @@ class Post extends StatelessWidget {
   final String postOwnerImageUrl;
   final bool startLiked;
   final ValueNotifier liked;
-  final Function callback;
   Post({
     this.appData, //used to determine if we should have links to the other users
     this.postID,
@@ -128,7 +125,6 @@ class Post extends StatelessWidget {
     this.postOwnerImageUrl, //used to know who owns the post
     this.startLiked,
     this.liked,
-    @required this.callback,
   });
 
   Data modForUser(appData, id){
@@ -152,7 +148,6 @@ class Post extends StatelessWidget {
             postCaption: caption,
             postTimeStamp: timeStamp,
             appData: appData,
-            callback: callback,
           ),
         ),
       );
@@ -382,7 +377,6 @@ class Post extends StatelessWidget {
             MaterialPageRoute(
               builder: (context) => Profile(
                 appData: modForUser(appData, postOwnerID),
-                callback: callback,
               ),
             ),
           );

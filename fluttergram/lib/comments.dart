@@ -3,8 +3,6 @@ import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:fluttergram/main.dart';
-import 'package:fluttergram/profile.dart';
-import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 
 import 'dart:convert';
 import 'package:async/async.dart';
@@ -17,7 +15,6 @@ class Comments extends StatefulWidget {
   final String postOwnerEmail;
   final String postCaption;
   final String postTimeStamp;
-  final Function callback;
 
   Comments({
     Key key,
@@ -27,7 +24,6 @@ class Comments extends StatefulWidget {
     this.postOwnerEmail,
     this.postCaption,
     this.postTimeStamp,
-    @required this.callback,
   }) : super(key: key);
 
   _CommentsState createState() => _CommentsState();
@@ -133,7 +129,6 @@ class _CommentsState extends State<Comments> {
             tooltip: MaterialLocalizations.of(context).backButtonTooltip,
             onPressed: () {
               Navigator.maybePop(context).then((value){
-                widget.callback();
               });
             }
           ),
