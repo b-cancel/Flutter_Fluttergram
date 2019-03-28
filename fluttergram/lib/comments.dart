@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:io';
 
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:fluttergram/main.dart';
 
@@ -332,6 +333,8 @@ class _PostCommentState extends State<PostComment> {
                           fontWeight: FontWeight.bold,
                           color: Colors.black,
                         ),
+                        recognizer: TapGestureRecognizer()
+                          ..onTap = () => goToUserProfile(context, widget.appData, widget.userID)
                       ),
                       TextSpan(
                         text: " " + widget.comment,
