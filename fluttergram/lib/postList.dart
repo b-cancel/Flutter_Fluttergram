@@ -137,11 +137,7 @@ class Post extends StatefulWidget {
 
 class _PostState extends State<Post> {
   final showOptions = false;
-
-  final showComent = false;
-
   final showShare = false;
-
   final showBookmark = false;
 
   bool liked;
@@ -212,7 +208,11 @@ class _PostState extends State<Post> {
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: <Widget>[
-              buildClickOrNoClick(context, widget.selectedMenuItem),
+              newOrReload(
+                context, 
+                widget.selectedMenuItem, 
+                reload: widget.appData.whoOwnsPostsID == widget.postOwnerID,
+              ),
               (showOptions)
               ? Padding(
                 padding: EdgeInsets.fromLTRB(0, 8, 8, 8),
@@ -396,22 +396,20 @@ class _PostState extends State<Post> {
     }
   }
 
-  Widget buildClickOrNoClick(BuildContext context, selectedMenuItem) {
-    if(widget.appData.whoOwnsPostsID == widget.postOwnerID){
-      return ProfileLink(
+  Widget newOrReload(BuildContext context, selectedMenuItem, {bool reload}) {
+    return GestureDetector(
+      onTap: () => goToUserProfile(
+        context, 
+        widget.appData, 
+        widget.postOwnerID, 
+        selectedMenuItem, 
+        reload: reload,
+      ),
+      child: new ProfileLink(
         postOwnerImageUrl: widget.postOwnerImageUrl, 
         postOwnerEmail: widget.postOwnerEmail,
-      );
-    }
-    else{
-      return GestureDetector(
-        onTap: () => goToUserProfile(context, widget.appData, widget.postOwnerID, selectedMenuItem),
-        child: new ProfileLink(
-          postOwnerImageUrl: widget.postOwnerImageUrl, 
-          postOwnerEmail: widget.postOwnerEmail,
-        ),
-      );
-    }
+      ),
+    );
   }
 }
 

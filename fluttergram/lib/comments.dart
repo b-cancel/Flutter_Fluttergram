@@ -27,7 +27,7 @@ class Comments extends StatefulWidget {
     this.postOwnerEmail,
     this.postCaption,
     this.postTimeStamp,
-    this.selectedMenuItem,
+    @required this.selectedMenuItem,
   }) : super(key: key);
 
   _CommentsState createState() => _CommentsState();
@@ -129,15 +129,6 @@ class _CommentsState extends State<Comments> {
       appBar: PreferredSize(
         preferredSize: Size.fromHeight(45),
         child: AppBar(
-          leading: IconButton(
-            icon: const BackButtonIcon(),
-            color: Colors.black,
-            tooltip: MaterialLocalizations.of(context).backButtonTooltip,
-            onPressed: () {
-              Navigator.maybePop(context).then((value){
-              });
-            }
-          ),
           backgroundColor: new Color(0xfff8faf8),
           elevation: 1.0,
           centerTitle: false,
@@ -345,7 +336,8 @@ class _PostCommentState extends State<PostComment> {
                             context, 
                             widget.appData, 
                             widget.userID, 
-                            widget.selectedMenuItem
+                            widget.selectedMenuItem,
+                            reload: false,
                           ),
                       ),
                       TextSpan(

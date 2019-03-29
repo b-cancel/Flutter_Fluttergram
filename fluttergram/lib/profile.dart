@@ -123,8 +123,6 @@ class _UserProfilePageState extends State<UserProfilePage> {
   ValueNotifier<String> imageUrl;
   ValueNotifier<bool> expandedField;
 
-  int _selectedIndex = -1; //we are on whatever profile we selected
-
   TextStyle bioTextStyle = TextStyle(
     fontFamily: 'Spectral',
     fontWeight: FontWeight.w400,//try changing weight to w500 if not thin
@@ -158,28 +156,6 @@ class _UserProfilePageState extends State<UserProfilePage> {
 
   @override
   Widget build(BuildContext context) {
-    Data modForMyPosts(appData){
-      appData.whoOwnsPostsID = appData.currentUserID;
-      return appData;
-    }
-
-    Widget retProfile(){
-      print("private " + _selectedIndex.toString() + " public " + 2.toString());
-
-      return Profile(
-        appData: modForMyPosts(widget.appData),
-        selectedMenuItem: 2,
-      );
-    }
-    
-    var _widgetOptions = [
-      Home(
-        appData: widget.appData,
-      ),
-      NewPost(),
-      retProfile(),
-    ];
-
     return Scaffold(
       appBar: PreferredSize(
         preferredSize: Size.fromHeight(45),
@@ -229,198 +205,152 @@ class _UserProfilePageState extends State<UserProfilePage> {
           ),
         ),
       ),
-      body: (_selectedIndex != -1)
-      ? Center(
-        child: _widgetOptions.elementAt(_selectedIndex),
-      )
-      : Container(
-        child: ListView(
-          children: <Widget>[
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
+      body: Stack(
+        children: <Widget>[
+          Container(
+            child: ListView(
               children: <Widget>[
-                Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: <Widget>[
-                    Container(
-                      padding: EdgeInsets.all(16),
-                      child: Container(
-                        height: (widget.editable) ? 100 : 75,
-                        width: (widget.editable) ? 100 : 75,
-                        child: Stack(
-                          children: <Widget>[
-                            AnimatedBuilder(
-                              animation: imageUrl,
-                              builder: (context, child){
-                                return Container(
-                                  decoration: BoxDecoration(
-                                    image: DecorationImage(
-                                      image: new NetworkImage(imageUrl.value),
-                                      fit: BoxFit.cover,
-                                    ),
-                                    borderRadius: BorderRadius.circular(100.0),
-                                    border: Border.all(
-                                      color: Colors.black,
-                                      width: 1.0,
-                                    ),
-                                  ),
-                                );
-                              },
-                            ),
-                            (widget.editable == false) 
-                            ? Container()
-                            : new Stack(
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: <Widget>[
+                        Container(
+                          padding: EdgeInsets.all(16),
+                          child: Container(
+                            height: (widget.editable) ? 100 : 75,
+                            width: (widget.editable) ? 100 : 75,
+                            child: Stack(
                               children: <Widget>[
-                                Align(
-                                  alignment: Alignment.bottomRight,
-                                  child: Container(
-                                    decoration: BoxDecoration(
-                                      borderRadius: BorderRadius.circular(80.0),
-                                      color: Colors.blue,
-                                      border: Border.all(
-                                        color: Colors.blue,
-                                        width: 4.0,
+                                AnimatedBuilder(
+                                  animation: imageUrl,
+                                  builder: (context, child){
+                                    return Container(
+                                      decoration: BoxDecoration(
+                                        image: DecorationImage(
+                                          image: new NetworkImage(imageUrl.value),
+                                          fit: BoxFit.cover,
+                                        ),
+                                        borderRadius: BorderRadius.circular(100.0),
+                                        border: Border.all(
+                                          color: Colors.black,
+                                          width: 1.0,
+                                        ),
+                                      ),
+                                    );
+                                  },
+                                ),
+                                (widget.editable == false) 
+                                ? Container()
+                                : new Stack(
+                                  children: <Widget>[
+                                    Align(
+                                      alignment: Alignment.bottomRight,
+                                      child: Container(
+                                        decoration: BoxDecoration(
+                                          borderRadius: BorderRadius.circular(80.0),
+                                          color: Colors.blue,
+                                          border: Border.all(
+                                            color: Colors.blue,
+                                            width: 4.0,
+                                          ),
+                                        ),
+                                        child: Icon(
+                                          Icons.edit,
+                                          color: Colors.white,
+                                          size: 16,
+                                        ),
                                       ),
                                     ),
-                                    child: Icon(
-                                      Icons.edit,
-                                      color: Colors.white,
-                                      size: 16,
+                                    FlatButton(
+                                      shape: CircleBorder(),
+                                      onPressed: () => imagePicker(),
+                                      child: Container(),
                                     ),
-                                  ),
-                                ),
-                                FlatButton(
-                                  shape: CircleBorder(),
-                                  onPressed: () => imagePicker(),
-                                  child: Container(),
+                                  ],
                                 ),
                               ],
                             ),
-                          ],
-                        ),
-                      ),
-                    ),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.stretch,
-                        children: <Widget>[
-                          new ProfileData(
-                            appData: widget.appData,
-                            userID: widget.appData.whoOwnsPostsID,
-                            posts: 12,
-                            comments: 35,
-                            likes: 1283,
                           ),
-                          (widget.editable == false)
-                          ? Container()
-                          : Padding(
-                            padding: const EdgeInsets.only(right: 16.0),
-                            child: AnimatedBuilder(
-                              animation: editing,
-                              builder: (BuildContext context, Widget child) {
-                                return editDoneButton();
-                              },
-                            ),
-                          )
-                        ],
-                      ),
-                    )
-                  ],
-                ),
-                AnimatedBuilder(
-                  animation: expandedField,
-                  builder: (BuildContext context, Widget child) {
-                    return Column(
-                      children: <Widget>[
-                        ClipRect(
-                          child: Padding(
-                            padding: const EdgeInsets.only(left: 16, right: 16),
-                            child: TextFormField(
-                              focusNode: bioNode,
-                              controller: bioController,
-                              style: bioTextStyle,
-                              maxLines: (expandedField.value) ? 7 : 1,
-                              decoration: InputDecoration(
-                                border: InputBorder.none,
+                        ),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.stretch,
+                            children: <Widget>[
+                              new ProfileData(
+                                appData: widget.appData,
+                                userID: widget.appData.whoOwnsPostsID,
+                                posts: 12,
+                                comments: 35,
+                                likes: 1283,
+                              ),
+                              (widget.editable == false)
+                              ? Container()
+                              : Padding(
+                                padding: const EdgeInsets.only(right: 16.0),
+                                child: AnimatedBuilder(
+                                  animation: editing,
+                                  builder: (BuildContext context, Widget child) {
+                                    return editDoneButton();
+                                  },
+                                ),
+                              )
+                            ],
+                          ),
+                        )
+                      ],
+                    ),
+                    AnimatedBuilder(
+                      animation: expandedField,
+                      builder: (BuildContext context, Widget child) {
+                        return Column(
+                          children: <Widget>[
+                            ClipRect(
+                              child: Padding(
+                                padding: const EdgeInsets.only(left: 16, right: 16),
+                                child: TextFormField(
+                                  focusNode: bioNode,
+                                  controller: bioController,
+                                  style: bioTextStyle,
+                                  maxLines: (expandedField.value) ? 7 : 1,
+                                  decoration: InputDecoration(
+                                    border: InputBorder.none,
+                                  ),
+                                ),
                               ),
                             ),
-                          ),
-                        ),
-                        GestureDetector(
-                          onTap:  () => fieldSizeToggle(),
-                          behavior: HitTestBehavior.opaque,
-                          child: Container(
-                            padding: EdgeInsets.only(right: 16),
-                            alignment: Alignment.bottomRight,
-                            child: new Text(
-                              (expandedField.value) ? "Show Less" : "Show More",
+                            GestureDetector(
+                              onTap:  () => fieldSizeToggle(),
+                              behavior: HitTestBehavior.opaque,
+                              child: Container(
+                                padding: EdgeInsets.only(right: 16),
+                                alignment: Alignment.bottomRight,
+                                child: new Text(
+                                  (expandedField.value) ? "Show Less" : "Show More",
+                                ),
+                              ),
                             ),
-                          ),
-                        ),
-                      ],
-                    );
-                  },
-                ),
-                PostList(
-                  appData: widget.appData,
+                          ],
+                        );
+                      },
+                    ),
+                    PostList(
+                      appData: widget.appData,
+                      selectedMenuItem: widget.selectedMenuItem,
+                    ),
+                  ],
                 ),
               ],
             ),
-          ],
-        ),
+          ),
+          BottomNav(
+            appData: widget.appData,
+            selectedMenuItem: widget.selectedMenuItem,
+          ),
+        ],
       ),
-      bottomNavigationBar: new Container(
-        color: Colors.white,
-        height: 45.0,
-        alignment: Alignment.center,
-        child: BottomNavigationBar(
-          type: BottomNavigationBarType.fixed,
-          currentIndex: (_selectedIndex == -1) ? widget.selectedMenuItem : _selectedIndex,
-          onTap: _onItemTapped,
-          items: [
-            new BottomNavigationBarItem(
-              icon: Icon(
-                Icons.home,
-              ),
-              title: new Text(
-                "Home",
-                style: TextStyle(
-                  fontSize: 0,
-                ),
-              ),
-            ),
-            new BottomNavigationBarItem(
-              icon: Icon(
-                Icons.add_box,
-              ),
-              title: new Text(
-                "New Post",
-                style: TextStyle(
-                  fontSize: 0,
-                ),
-              ),
-            ),
-            new BottomNavigationBarItem(
-              icon: Icon(
-                Icons.account_box,
-              ),
-              title: new Text(
-                "Profile",
-                style: TextStyle(
-                  fontSize: 0,
-                ),
-              ),
-            ),
-          ],
-        ),
-      )
     );
-  }
-
-  void _onItemTapped(int index) {
-    setState(() {
-      _selectedIndex = index;
-    });
   }
 
   //-------------------------IMAGE UPDATE CODE-------------------------

@@ -3,7 +3,6 @@
 
 //flutter
 import 'package:flutter/material.dart';
-import 'package:fluttergram/new.dart';
 
 //within project
 import 'package:fluttergram/postList.dart';

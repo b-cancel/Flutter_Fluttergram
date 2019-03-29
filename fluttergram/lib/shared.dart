@@ -46,19 +46,19 @@ class BottomNav extends StatelessWidget {
               children: <Widget>[
                 MenuItem(
                   appData: appData,
-                  active: (selectedMenuItem != 0),
+                  thisMenuItem: 0,
                   selectedMenuItem: selectedMenuItem,
                   menuIcon: (selectedMenuItem == 0) ? Icons.home : OMIcons.home,
                 ),
                 MenuItem(
                   appData: appData,
-                  active: (selectedMenuItem != 1),
+                  thisMenuItem: 1,
                   selectedMenuItem: selectedMenuItem,
                   menuIcon: (selectedMenuItem == 1) ? Icons.add_box : OMIcons.addBox,
                 ),
                 MenuItem(
                   appData: appData,
-                  active: (selectedMenuItem != 2),
+                  thisMenuItem: 2,
                   selectedMenuItem: selectedMenuItem,
                   menuIcon: (selectedMenuItem == 2) ? Icons.account_box : OMIcons.accountBox,
                 ),
@@ -73,13 +73,13 @@ class BottomNav extends StatelessWidget {
 
 class MenuItem extends StatelessWidget {
   final Data appData;
-  final bool active;
+  final int thisMenuItem;
   final int selectedMenuItem;
   final IconData menuIcon;
 
   const MenuItem({
     this.appData,
-    this.active,
+    this.thisMenuItem,
     this.selectedMenuItem,
     this.menuIcon,
     Key key,
@@ -89,39 +89,49 @@ class MenuItem extends StatelessWidget {
   Widget build(BuildContext context) {
     return IconButton(
       onPressed: (){
-        if(active){
-          print("navigating");
+        if(thisMenuItem != selectedMenuItem){
+          print("navigating to new page");
           Navigator.push(
             context,
             MaterialPageRoute(
               //NOTE: this MUST be like this
-              builder: (context) => navFunc(appData, active, selectedMenuItem),
+              builder: (context) => navFunc(appData, thisMenuItem),
             ),
           );
         }
-        else print("We Are Already There");
+        else{
+          print("refreshing current page");
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(
+              //NOTE: this MUST be like this
+              builder: (context) => navFunc(appData, thisMenuItem),
+            ),
+          );
+        }
       },
       icon: Icon(menuIcon),
     );
   }
 }
 
-Widget navFunc(appData, active, currentIndex){
-  if(active && currentIndex != 0){
-    return Home(
-      appData: appData,
-    );
-  }
-  else if(active && currentIndex != 1){
-    return NewPost(
-      appData: appData,
-    );
-  }
-  else{ //(active && currentIndex != 2)
-    return Profile(
-      appData: modForUser(appData, currentIndex),
-      selectedMenuItem: currentIndex,
-    );
+Widget navFunc(Data appData, int thisMenuItem){
+  switch(thisMenuItem){
+    case 0:
+      //selectedMenuItem always 0
+      return Home(appData: appData); 
+    break;
+    case 1:
+      //selectedMenuItem always 1
+      return NewPost(appData: appData);
+    break;
+    default:
+      //selectedMenuItem FROM HERE is always 2
+      return Profile(
+        appData: modForUser(appData, appData.currentUserID),
+        selectedMenuItem: 2,
+      );
+    break;
   }
 }
 
@@ -132,24 +142,37 @@ class Data {
   int whoOwnsPostsID;
 }
 
-Data modForUser(appData, id){
+Data modForUser(Data appData, int id){
   appData.whoOwnsPostsID = id;
   return appData;
 }
 
-void goToUserProfile(context, appData, profileUserID, selectedMenuItem){
-  Navigator.push(
-    context,
-    MaterialPageRoute(
-      builder: (context) => Profile(
-        appData: modForUser(appData, profileUserID),
-        selectedMenuItem: selectedMenuItem,
-      ),
-    ),
-  );
-}
-
-Data modForAllPosts(appData){
+Data modForAllPosts(Data appData){
   appData.whoOwnsPostsID = -1; //the secret code for all posts
   return appData;
+}
+
+void goToUserProfile(BuildContext context, Data appData, int profileUserID, int selectedMenuItem, {bool reload}){
+  if(reload){
+    Navigator.pushReplacement(
+      context,
+      MaterialPageRoute(
+        builder: (context) => Profile(
+          appData: modForUser(appData, profileUserID),
+          selectedMenuItem: selectedMenuItem,
+        ),
+      ),
+    );
+  }
+  else{
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => Profile(
+          appData: modForUser(appData, profileUserID),
+          selectedMenuItem: selectedMenuItem,
+        ),
+      ),
+    );
+  }
 }
