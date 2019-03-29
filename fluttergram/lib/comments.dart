@@ -7,6 +7,7 @@ import 'package:fluttergram/main.dart';
 
 import 'dart:convert';
 import 'package:async/async.dart';
+import 'package:fluttergram/shared.dart';
 import 'package:http/http.dart' as http;
 
 class Comments extends StatefulWidget {
@@ -16,6 +17,7 @@ class Comments extends StatefulWidget {
   final String postOwnerEmail;
   final String postCaption;
   final String postTimeStamp;
+  final int selectedMenuItem;
 
   Comments({
     Key key,
@@ -25,6 +27,7 @@ class Comments extends StatefulWidget {
     this.postOwnerEmail,
     this.postCaption,
     this.postTimeStamp,
+    this.selectedMenuItem,
   }) : super(key: key);
 
   _CommentsState createState() => _CommentsState();
@@ -163,6 +166,7 @@ class _CommentsState extends State<Comments> {
                     email: widget.postOwnerEmail,
                     comment: widget.postCaption,
                     timeStamp: widget.postTimeStamp,
+                    selectedMenuItem: widget.selectedMenuItem,
                   ),
                 ),
                 FutureBuilder(
@@ -186,6 +190,7 @@ class _CommentsState extends State<Comments> {
                           userID: list[index]["user_id"],
                           comment: list[index]["text"],
                           timeStamp: list[index]["created_at"],
+                          selectedMenuItem: widget.selectedMenuItem,
                         ),
                       );
                     }
@@ -279,6 +284,7 @@ class PostComment extends StatefulWidget {
   final String email;
   final String comment;
   final String timeStamp;
+  final int selectedMenuItem;
 
   const PostComment({
     this.appData, //used to allow edit and delete
@@ -287,6 +293,7 @@ class PostComment extends StatefulWidget {
     this.email,
     this.comment,
     this.timeStamp,
+    @required this.selectedMenuItem,
     Key key,
   }) : super(key: key);
 
@@ -334,7 +341,12 @@ class _PostCommentState extends State<PostComment> {
                           color: Colors.black,
                         ),
                         recognizer: TapGestureRecognizer()
-                          ..onTap = () => goToUserProfile(context, widget.appData, widget.userID)
+                          ..onTap = () => goToUserProfile(
+                            context, 
+                            widget.appData, 
+                            widget.userID, 
+                            widget.selectedMenuItem
+                          ),
                       ),
                       TextSpan(
                         text: " " + widget.comment,

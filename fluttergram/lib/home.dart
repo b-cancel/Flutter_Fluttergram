@@ -1,12 +1,18 @@
-import 'package:flutter/material.dart';
-import 'package:fluttergram/main.dart';
+//CHUNK OF CODE TAKEN FROM:
+//https://github.com/iampawan/Flutter-Instagram-UI-Clone
 
-import 'posts.dart';
-import 'profile.dart';
-import 'new.dart';
+//flutter
+import 'package:flutter/material.dart';
+import 'package:fluttergram/new.dart';
+
+//within project
+import 'package:fluttergram/postList.dart';
+import 'package:fluttergram/shared.dart';
 
 class Home extends StatefulWidget {
   final Data appData;
+  //NOTE: we dont need a selectedMenuItem because if we are here we know its 0
+
   Home({
     Key key, 
     this.appData,
@@ -15,80 +21,32 @@ class Home extends StatefulWidget {
 }
 
 class _HomeState extends State<Home> {
-  int _selectedIndex = 0;
-
-  Data modForMyPosts(appData){
-    appData.whoOwnsPostsID = appData.currentUserID;
-    return appData;
-  }
-
   @override
   Widget build(BuildContext context) {
-    var _widgetOptions = [
-      Posts(
-        appData: widget.appData,
-      ),
-      NewPost(),
-      Profile(
-        appData: modForMyPosts(widget.appData),
-      ),
-    ];
-
     return Scaffold(
-      body: Center(
-        child: _widgetOptions.elementAt(_selectedIndex),
-      ),
-      bottomNavigationBar: new Container(
-        color: Colors.white,
-        height: 45.0,
-        alignment: Alignment.center,
-        child: BottomNavigationBar(
-          type: BottomNavigationBarType.fixed,
-          currentIndex: _selectedIndex,
-          onTap: _onItemTapped,
-          items: [
-            new BottomNavigationBarItem(
-              icon: Icon(
-                Icons.home,
-              ),
-              title: new Text(
-                "Home",
-                style: TextStyle(
-                  fontSize: 0,
-                ),
-              ),
-            ),
-            new BottomNavigationBarItem(
-              icon: Icon(
-                Icons.add_box,
-              ),
-              title: new Text(
-                "New Post",
-                style: TextStyle(
-                  fontSize: 0,
-                ),
-              ),
-            ),
-            new BottomNavigationBarItem(
-              icon: Icon(
-                Icons.account_box,
-              ),
-              title: new Text(
-                "Profile",
-                style: TextStyle(
-                  fontSize: 0,
-                ),
-              ),
-            ),
-          ],
+      appBar: PreferredSize(
+        preferredSize: Size.fromHeight(45),
+          child: new AppBar(
+          backgroundColor: new Color(0xfff8faf8),
+          elevation: 1.0,
+          leading: new Icon(Icons.camera_alt),
+          title: SizedBox(
+            child: new Text("Fluttergram"),
+          ),
         ),
       ),
+      body: Stack(
+        children: <Widget>[
+          PostList(
+            appData: modForAllPosts(widget.appData),
+            selectedMenuItem: 0,
+          ),
+          BottomNav(
+            appData: widget.appData,
+            selectedMenuItem: 0,
+          ),
+        ],
+      ),
     );
-  }
-
-  void _onItemTapped(int index) {
-    setState(() {
-      _selectedIndex = index;
-    });
   }
 }

@@ -1,36 +1,18 @@
-import 'dart:convert';
-import 'dart:io';
-import 'package:fluttergram/profile.dart';
-import 'package:http/http.dart' as http; 
-
+//flutter
 import 'package:flutter/material.dart';
 
+//dart
+import 'dart:convert';
+import 'dart:io';
+
+//plugins
+import 'package:http/http.dart' as http; 
+
+//within project
+import 'package:fluttergram/shared.dart';
 import 'home.dart';
 
-Data modForUser(appData, id){
-  appData.whoOwnsPostsID = id;
-  return appData;
-}
-
-void goToUserProfile(context, appData, profileUserID){
-  Navigator.push(
-    context,
-    MaterialPageRoute(
-      builder: (context) => Profile(
-        appData: modForUser(appData, profileUserID),
-      ),
-    ),
-  );
-}
-
 void main() => runApp(MyApp());
-
-class Data {
-  String url = "https://serene-beach-48273.herokuapp.com";
-  String token = "";
-  int currentUserID;
-  int whoOwnsPostsID;
-}
 
 class MyApp extends StatelessWidget {
   final appData = new Data();

@@ -7,8 +7,11 @@ import 'dart:async';
 
 import 'package:async/async.dart';
 import 'package:flutter/material.dart';
+import 'package:fluttergram/home.dart';
 import 'package:fluttergram/main.dart';
+import 'package:fluttergram/new.dart';
 import 'package:fluttergram/postList.dart';
+import 'package:fluttergram/shared.dart';
 
 import 'dart:convert';
 import 'dart:io';
@@ -22,10 +25,12 @@ Dio dio = new Dio();
 
 class Profile extends StatefulWidget {
   final Data appData;
+  final int selectedMenuItem;
 
   Profile({
     Key key,
     this.appData,
+    @required this.selectedMenuItem,
   }) : super(key: key);
 
   _ProfileState createState() => _ProfileState();
@@ -80,6 +85,7 @@ class _ProfileState extends State<Profile> {
             bio: snapshot.data["bio"],
             imageUrl: snapshot.data["profile_image_url"],
             spawnTime: snapshot.data["created_at"],
+            selectedMenuItem: widget.selectedMenuItem,
           );
         }
         else return CustomLoading();
@@ -97,6 +103,7 @@ class UserProfilePage extends StatefulWidget {
   final String imageUrl;
   final String bio;
   final String spawnTime;
+  final int selectedMenuItem;
 
   UserProfilePage({
     this.editable,
@@ -105,6 +112,7 @@ class UserProfilePage extends StatefulWidget {
     this.imageUrl,
     this.bio,
     this.spawnTime,
+    @required this.selectedMenuItem,
   });
 
   @override
@@ -114,6 +122,8 @@ class UserProfilePage extends StatefulWidget {
 class _UserProfilePageState extends State<UserProfilePage> {
   ValueNotifier<String> imageUrl;
   ValueNotifier<bool> expandedField;
+
+  int _selectedIndex = -1; //we are on whatever profile we selected
 
   TextStyle bioTextStyle = TextStyle(
     fontFamily: 'Spectral',
@@ -148,6 +158,28 @@ class _UserProfilePageState extends State<UserProfilePage> {
 
   @override
   Widget build(BuildContext context) {
+    Data modForMyPosts(appData){
+      appData.whoOwnsPostsID = appData.currentUserID;
+      return appData;
+    }
+
+    Widget retProfile(){
+      print("private " + _selectedIndex.toString() + " public " + 2.toString());
+
+      return Profile(
+        appData: modForMyPosts(widget.appData),
+        selectedMenuItem: 2,
+      );
+    }
+    
+    var _widgetOptions = [
+      Home(
+        appData: widget.appData,
+      ),
+      NewPost(),
+      retProfile(),
+    ];
+
     return Scaffold(
       appBar: PreferredSize(
         preferredSize: Size.fromHeight(45),
@@ -197,7 +229,11 @@ class _UserProfilePageState extends State<UserProfilePage> {
           ),
         ),
       ),
-      body: Container(
+      body: (_selectedIndex != -1)
+      ? Center(
+        child: _widgetOptions.elementAt(_selectedIndex),
+      )
+      : Container(
         child: ListView(
           children: <Widget>[
             Column(
@@ -333,7 +369,58 @@ class _UserProfilePageState extends State<UserProfilePage> {
           ],
         ),
       ),
+      bottomNavigationBar: new Container(
+        color: Colors.white,
+        height: 45.0,
+        alignment: Alignment.center,
+        child: BottomNavigationBar(
+          type: BottomNavigationBarType.fixed,
+          currentIndex: (_selectedIndex == -1) ? widget.selectedMenuItem : _selectedIndex,
+          onTap: _onItemTapped,
+          items: [
+            new BottomNavigationBarItem(
+              icon: Icon(
+                Icons.home,
+              ),
+              title: new Text(
+                "Home",
+                style: TextStyle(
+                  fontSize: 0,
+                ),
+              ),
+            ),
+            new BottomNavigationBarItem(
+              icon: Icon(
+                Icons.add_box,
+              ),
+              title: new Text(
+                "New Post",
+                style: TextStyle(
+                  fontSize: 0,
+                ),
+              ),
+            ),
+            new BottomNavigationBarItem(
+              icon: Icon(
+                Icons.account_box,
+              ),
+              title: new Text(
+                "Profile",
+                style: TextStyle(
+                  fontSize: 0,
+                ),
+              ),
+            ),
+          ],
+        ),
+      )
     );
+  }
+
+  void _onItemTapped(int index) {
+    setState(() {
+      _selectedIndex = index;
+    });
   }
 
   //-------------------------IMAGE UPDATE CODE-------------------------

@@ -4,7 +4,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:fluttergram/comments.dart';
 import 'package:fluttergram/main.dart';
-import 'package:fluttergram/profile.dart';
+import 'package:fluttergram/shared.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 
 import 'dart:convert';
@@ -16,10 +16,12 @@ import 'package:http/http.dart' as http;
 
 class PostList extends StatefulWidget {
   final Data appData;
+  final int selectedMenuItem;
 
   PostList({
     Key key,
     this.appData,
+    @required this.selectedMenuItem,
   }) : super(key: key);
 
   @override
@@ -90,6 +92,7 @@ class _PostListState extends State<PostList> {
                 postOwnerEmail: list[index]["user_email"],
                 postOwnerImageUrl: list[index]["user_profile_image_url"],
                 startLiked: list[index]["liked"],
+                selectedMenuItem: widget.selectedMenuItem,
               ),
             ),
           );
@@ -112,6 +115,7 @@ class Post extends StatefulWidget {
   final String postOwnerEmail;
   final String postOwnerImageUrl;
   final bool startLiked;
+  final int selectedMenuItem;
   Post({
     this.appData, //used to determine if we should have links to the other users
     this.postID,
@@ -124,6 +128,7 @@ class Post extends StatefulWidget {
     this.postOwnerEmail, //diplays in front of the caption
     this.postOwnerImageUrl, //used to know who owns the post
     this.startLiked,
+    @required this.selectedMenuItem,
   });
 
   @override
@@ -191,6 +196,7 @@ class _PostState extends State<Post> {
             postCaption: widget.caption,
             postTimeStamp: widget.timeStamp,
             appData: widget.appData,
+            selectedMenuItem: widget.selectedMenuItem,
           ),
         ),
       );
@@ -206,7 +212,7 @@ class _PostState extends State<Post> {
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: <Widget>[
-              buildClickOrNoClick(context),
+              buildClickOrNoClick(context, widget.selectedMenuItem),
               (showOptions)
               ? Padding(
                 padding: EdgeInsets.fromLTRB(0, 8, 8, 8),
@@ -390,7 +396,7 @@ class _PostState extends State<Post> {
     }
   }
 
-  Widget buildClickOrNoClick(BuildContext context) {
+  Widget buildClickOrNoClick(BuildContext context, selectedMenuItem) {
     if(widget.appData.whoOwnsPostsID == widget.postOwnerID){
       return ProfileLink(
         postOwnerImageUrl: widget.postOwnerImageUrl, 
@@ -399,7 +405,7 @@ class _PostState extends State<Post> {
     }
     else{
       return GestureDetector(
-        onTap: () => goToUserProfile(context, widget.appData, widget.postOwnerID),
+        onTap: () => goToUserProfile(context, widget.appData, widget.postOwnerID, selectedMenuItem),
         child: new ProfileLink(
           postOwnerImageUrl: widget.postOwnerImageUrl, 
           postOwnerEmail: widget.postOwnerEmail,
