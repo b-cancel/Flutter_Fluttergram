@@ -179,14 +179,17 @@ class _CommentsState extends State<Comments> {
                       List list = snapshot.data;
                       comments.value = json.encode(list);
 
+                      //NOTE: INSTEAD of using an animated builder
+                      //we might be able to change a ValueNotifier value when we press post
+                      //assuming that value notifier can be sent to another stateful widget
+                      //we can listen to that value notifier in the stateful widget 
+                      //only for the purpose of causing a set state in that stateful widget
+
                       //return the data
                       return AnimatedBuilder(
                         animation: comments,
                         builder: (BuildContext context, Widget child) {
-
-                          print("animated builder construct");
                           List list = json.decode(comments.value);
-
                           return ListView.builder(
                             shrinkWrap: true,
                             physics: ClampingScrollPhysics(),
