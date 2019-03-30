@@ -103,13 +103,37 @@ class MenuItem extends StatelessWidget {
         }
         else{
           print("refreshing current page");
-          Navigator.pushReplacement(
-            context,
-            MaterialPageRoute(
-              //NOTE: this MUST be like this
-              builder: (context) => navFunc(appData, thisMenuItem),
-            ),
-          );
+          //NOTE: refreshing HOME is unoptimal... 
+          //but given that in SOME cases its the route at the end of the stack
+          //nothing else can be done
+          //NOTE: we could replace ONLY when its the route at the end of the stack
+          //but currently we have no way of identifying that
+          //we CAN give a route a name and see if the navigator is on that name
+          //so we MIGHT be able to give it a random route ID
+          //then we save the first random route ID in appData
+          //then check if we are or are not on the first route
+
+          //NOTE: refreshing ADD will never happen in real life
+          //since tapping add will take you to another page
+
+          //NOTE: refreshing profile will ALWAYS be possible
+          //since it NEVER is the FIRST route
+          if(thisMenuItem == 2){
+            //PROFILE reload (always possible to pop and push)
+            Navigator.pop(context);
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                //NOTE: this MUST be like this
+                builder: (context) => navFunc(appData, thisMenuItem),
+              ),
+            );
+          }
+          else{
+            //HOME reload 
+            //ADD reload (for now)
+            popPushOrReplace(context, appData, thisMenuItem);
+          }
         }
       },
       icon: Icon(menuIcon),
@@ -160,11 +184,10 @@ Data modForAllPosts(Data appData){
 }
 
 void goToUserProfile(BuildContext context, Data appData, int profileUserID, String profileUserEmail, int selectedMenuItem, {bool reload}){
-  print("going to user profile");
   Data newAppData = modForUser(appData, profileUserID);
-  print("going to user " + profileUserID.toString() + " and " + newAppData.whoOwnsPostsID.toString());
   if(reload){
-    Navigator.pushReplacement(
+    Navigator.pop(context);
+    Navigator.push(
       context,
       MaterialPageRoute(
         builder: (context) => Profile(
@@ -184,6 +207,28 @@ void goToUserProfile(BuildContext context, Data appData, int profileUserID, Stri
           appData: newAppData,
           selectedMenuItem: selectedMenuItem,
         ),
+      ),
+    );
+  }
+}
+
+void popPushOrReplace(BuildContext context, Data appData, int thisMenuItem) async{
+  bool popped = await Navigator.maybePop(context);
+  print("could we pop? -------------------------" + popped.toString());
+  if(popped){
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => navFunc(appData, thisMenuItem),
+      ),
+    );
+  }
+  else{
+    Navigator.pushReplacement(
+      context,
+      MaterialPageRoute(
+        //NOTE: this MUST be like this
+        builder: (context) => navFunc(appData, thisMenuItem),
       ),
     );
   }

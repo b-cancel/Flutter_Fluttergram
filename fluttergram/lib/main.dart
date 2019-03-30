@@ -23,6 +23,9 @@ class MyApp extends StatelessWidget {
     return new MaterialApp(
       title: 'Fluttergram',
       debugShowCheckedModeBanner: false,
+      routes: {
+        '/home': (context) => Home(),
+      },
       theme: new ThemeData(
           primarySwatch: Colors.blue,
           primaryColor: Colors.black,
@@ -143,7 +146,7 @@ class _LoginPageState extends State<LoginPage> {
               widget.appData.currentUserID = jsonResponse["id"];
 
               //go to next page with valid token
-              Navigator.push(
+              Navigator.pushReplacement(
                 context,
                 MaterialPageRoute(
                   builder: (context) => Home(
