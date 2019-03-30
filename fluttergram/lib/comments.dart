@@ -127,12 +127,10 @@ class _CommentsState extends State<Comments> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: PreferredSize(
+        //The TopBar Widget will handel the size
         preferredSize: Size.fromHeight(45),
-        child: AppBar(
-          backgroundColor: new Color(0xfff8faf8),
-          elevation: 1.0,
-          centerTitle: false,
-          title: new Text("Comments")
+        child: TopBar(
+          title: new Text("Comments"),
         ),
       ),
       body: Stack(
@@ -336,6 +334,7 @@ class _PostCommentState extends State<PostComment> {
                             context, 
                             widget.appData, 
                             widget.userID, 
+                            widget.email,
                             widget.selectedMenuItem,
                             reload: false,
                           ),

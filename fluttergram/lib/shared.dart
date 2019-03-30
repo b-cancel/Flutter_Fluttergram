@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:fluttergram/home.dart';
-import 'package:fluttergram/new.dart';
+import 'package:fluttergram/newOrEdit.dart';
 import 'package:fluttergram/profile.dart';
 
 import 'package:outline_material_icons/outline_material_icons.dart';
@@ -123,11 +123,12 @@ Widget navFunc(Data appData, int thisMenuItem){
     break;
     case 1:
       //selectedMenuItem always 1
-      return NewPost(appData: appData);
+      return NewOrEditPost(appData: appData, isNew: true);
     break;
     default:
       //selectedMenuItem FROM HERE is always 2
       return Profile(
+        email: "", //it will be read in soon
         appData: modForUser(appData, appData.currentUserID),
         selectedMenuItem: 2,
       );
@@ -152,12 +153,13 @@ Data modForAllPosts(Data appData){
   return appData;
 }
 
-void goToUserProfile(BuildContext context, Data appData, int profileUserID, int selectedMenuItem, {bool reload}){
+void goToUserProfile(BuildContext context, Data appData, int profileUserID, String profileUserEmail, int selectedMenuItem, {bool reload}){
   if(reload){
     Navigator.pushReplacement(
       context,
       MaterialPageRoute(
         builder: (context) => Profile(
+          email: profileUserEmail,
           appData: modForUser(appData, profileUserID),
           selectedMenuItem: selectedMenuItem,
         ),
@@ -169,6 +171,7 @@ void goToUserProfile(BuildContext context, Data appData, int profileUserID, int 
       context,
       MaterialPageRoute(
         builder: (context) => Profile(
+          email: profileUserEmail,
           appData: modForUser(appData, profileUserID),
           selectedMenuItem: selectedMenuItem,
         ),
@@ -176,3 +179,100 @@ void goToUserProfile(BuildContext context, Data appData, int profileUserID, int 
     );
   }
 }
+
+class TopBar extends StatelessWidget {
+  final Widget leading;
+  final Widget title;
+  final Widget trailing;
+
+  TopBar({
+    this.leading,
+    @required this.title,
+    this.trailing,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return PreferredSize(
+      preferredSize: Size.fromHeight(45),
+      child: Hero(
+        tag: 'topBar',
+        child: AppBar(
+          backgroundColor: new Color(0xfff8faf8),
+          elevation: 1.0,
+          centerTitle: false,
+          leading: (leading != null) ? leading : BackButton(),
+          title: title,
+          actions: <Widget>[
+            (trailing != null) ? trailing : Container(),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+      /*
+      PreferredSize(
+        preferredSize: Size.fromHeight(45),
+          child: new AppBar(
+          backgroundColor: new Color(0xfff8faf8),
+          elevation: 1.0,
+          leading: new Icon(Icons.camera_alt),
+          title: SizedBox(
+            child: new Text("Fluttergram"),
+          ),
+        ),
+      ),
+      */
+
+      /*
+      PreferredSize(
+        preferredSize: Size.fromHeight(45),
+        child: AppBar(
+          backgroundColor: new Color(0xfff8faf8),
+          elevation: 1.0,
+          leading: (isEditable) 
+          ? Container() 
+          : IconButton(
+            icon: const BackButtonIcon(),
+            color: Colors.black,
+            tooltip: MaterialLocalizations.of(context).backButtonTooltip,
+            onPressed: () {
+              Navigator.maybePop(context).then((value){
+              });
+            }
+          ),
+          centerTitle: false,
+          title: Transform.translate(
+            offset: Offset((isEditable) ? -60 : 0, 0),
+            child: Container(
+              child: new Row(
+                mainAxisSize: MainAxisSize.min,
+                mainAxisAlignment: MainAxisAlignment.start,
+                children: <Widget>[
+                  Padding(
+                    padding: (isEditable)
+                    ? EdgeInsets.only(right: 4.0)
+                    : EdgeInsets.all(0),
+                    child: new Text(
+                      (email).split('@')[0],
+                      style: TextStyle(
+                        color: Colors.black,
+                        fontSize: 16,
+                      ),
+                    ),
+                  ),
+                  (isEditable == false) 
+                  ? Container()
+                  : new Icon(
+                    FontAwesomeIcons.chevronDown,
+                    size: 8,
+                  ) ,
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
+      */

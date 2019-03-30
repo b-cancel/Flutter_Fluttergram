@@ -210,6 +210,7 @@ class _PostState extends State<Post> {
             children: <Widget>[
               newOrReload(
                 context, 
+                widget.postOwnerEmail,
                 widget.selectedMenuItem, 
                 reload: widget.appData.whoOwnsPostsID == widget.postOwnerID,
               ),
@@ -396,12 +397,13 @@ class _PostState extends State<Post> {
     }
   }
 
-  Widget newOrReload(BuildContext context, selectedMenuItem, {bool reload}) {
+  Widget newOrReload(BuildContext context, String email, int selectedMenuItem, {bool reload}) {
     return GestureDetector(
       onTap: () => goToUserProfile(
         context, 
         widget.appData, 
         widget.postOwnerID, 
+        email,
         selectedMenuItem, 
         reload: reload,
       ),

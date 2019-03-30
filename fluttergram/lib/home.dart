@@ -24,14 +24,11 @@ class _HomeState extends State<Home> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: PreferredSize(
+        //The TopBar Widget will handel the size
         preferredSize: Size.fromHeight(45),
-          child: new AppBar(
-          backgroundColor: new Color(0xfff8faf8),
-          elevation: 1.0,
+        child: TopBar(
           leading: new Icon(Icons.camera_alt),
-          title: SizedBox(
-            child: new Text("Fluttergram"),
-          ),
+          title: new Text("Fluttergram"),
         ),
       ),
       body: Stack(

@@ -7,9 +7,7 @@ import 'dart:async';
 
 import 'package:async/async.dart';
 import 'package:flutter/material.dart';
-import 'package:fluttergram/home.dart';
 import 'package:fluttergram/main.dart';
-import 'package:fluttergram/new.dart';
 import 'package:fluttergram/postList.dart';
 import 'package:fluttergram/shared.dart';
 
@@ -26,17 +24,30 @@ Dio dio = new Dio();
 class Profile extends StatefulWidget {
   final Data appData;
   final int selectedMenuItem;
+  final String email;
 
   Profile({
     Key key,
     this.appData,
     @required this.selectedMenuItem,
+    @required this.email,
   }) : super(key: key);
 
   _ProfileState createState() => _ProfileState();
 }
 
 class _ProfileState extends State<Profile> {
+
+  String email = "";
+  String loadingString = "Loading...";
+
+  @override
+  void initState() { 
+    super.initState();
+    if(widget.email == "") email = loadingString;
+    else email = widget.email;
+  }
+
   final AsyncMemoizer _memoizer = AsyncMemoizer();
 
   fetchData() {
@@ -70,26 +81,88 @@ class _ProfileState extends State<Profile> {
     });
   }
 
+  updateEmail(){
+    Future.delayed(Duration(microseconds: 1), (){
+      print("settting state for email");
+      setState(() {});
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
+    bool isEditable = widget.appData.whoOwnsPostsID == widget.appData.currentUserID;
+
     //show loading in the meantime
-    return FutureBuilder(
-      future: fetchData(),
-      builder: (BuildContext context, AsyncSnapshot snapshot) {
-        if(snapshot.connectionState == ConnectionState.done){
-          return UserProfilePage(
-            //we only edit our own page
-            editable: (widget.appData.whoOwnsPostsID == widget.appData.currentUserID),
+    return Scaffold(
+      appBar: PreferredSize(
+        preferredSize: Size.fromHeight(45),
+        child: TopBar(
+          leading: (isEditable) ? Container() :BackButton(),
+          title: Transform.translate(
+            offset: Offset((isEditable) ? -60 : 0, 0),
+            child: Container(
+              child: new Row(
+                mainAxisSize: MainAxisSize.min,
+                mainAxisAlignment: MainAxisAlignment.start,
+                children: <Widget>[
+                  Padding(
+                    padding: (isEditable)
+                    ? EdgeInsets.only(right: 4.0)
+                    : EdgeInsets.all(0),
+                    child: new Text(
+                      (email).split('@')[0],
+                      style: TextStyle(
+                        color: Colors.black,
+                        fontSize: 16,
+                      ),
+                    ),
+                  ),
+                  (isEditable == false) 
+                  ? Container()
+                  : new Icon(
+                    FontAwesomeIcons.chevronDown,
+                    size: 8,
+                  ) ,
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
+      body: Stack(
+        children: <Widget>[
+          FutureBuilder(
+            future: fetchData(),
+            builder: (BuildContext context, AsyncSnapshot snapshot) {
+              if(snapshot.connectionState == ConnectionState.done){
+                //we read in our email (it might be the same as what we passed or it might not)
+                if(email == loadingString){
+                  email = snapshot.data["email"];
+                  updateEmail();
+                }
+                else email = snapshot.data["email"];
+
+                //return the users profile
+                return UserProfilePage(
+                  //we only edit our own page
+                  editable: isEditable,
+                  appData: widget.appData,
+                  email: snapshot.data["email"],
+                  bio: snapshot.data["bio"],
+                  imageUrl: snapshot.data["profile_image_url"],
+                  spawnTime: snapshot.data["created_at"],
+                  selectedMenuItem: widget.selectedMenuItem,
+                );
+              }
+              else return CustomLoading();
+            },
+          ),
+          BottomNav(
             appData: widget.appData,
-            email: snapshot.data["email"],
-            bio: snapshot.data["bio"],
-            imageUrl: snapshot.data["profile_image_url"],
-            spawnTime: snapshot.data["created_at"],
             selectedMenuItem: widget.selectedMenuItem,
-          );
-        }
-        else return CustomLoading();
-      },
+          ),
+        ],
+      ),
     );
   }
 }
@@ -156,200 +229,140 @@ class _UserProfilePageState extends State<UserProfilePage> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: PreferredSize(
-        preferredSize: Size.fromHeight(45),
-        child: AppBar(
-          backgroundColor: new Color(0xfff8faf8),
-          elevation: 1.0,
-          leading: (widget.editable) 
-          ? Container() 
-          : IconButton(
-            icon: const BackButtonIcon(),
-            color: Colors.black,
-            tooltip: MaterialLocalizations.of(context).backButtonTooltip,
-            onPressed: () {
-              Navigator.maybePop(context).then((value){
-              });
-            }
-          ),
-          centerTitle: false,
-          title: Transform.translate(
-            offset: Offset((widget.editable) ? -60 : 0, 0),
-            child: Container(
-              child: new Row(
-                mainAxisSize: MainAxisSize.min,
-                mainAxisAlignment: MainAxisAlignment.start,
-                children: <Widget>[
-                  Padding(
-                    padding: (widget.editable)
-                    ? EdgeInsets.only(right: 4.0)
-                    : EdgeInsets.all(0),
-                    child: new Text(
-                      (widget.email).split('@')[0],
-                      style: TextStyle(
-                        color: Colors.black,
-                        fontSize: 16,
-                      ),
-                    ),
-                  ),
-                  (widget.editable == false) 
-                  ? Container()
-                  : new Icon(
-                    FontAwesomeIcons.chevronDown,
-                    size: 8,
-                  ) ,
-                ],
-              ),
-            ),
-          ),
-        ),
-      ),
-      body: Stack(
-        children: <Widget>[
-          Container(
-            child: ListView(
+    return ListView(
+      children: <Widget>[
+        Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: <Widget>[
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: <Widget>[
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: <Widget>[
-                    Row(
-                      crossAxisAlignment: CrossAxisAlignment.start,
+                Container(
+                  padding: EdgeInsets.all(16),
+                  child: Container(
+                    height: (widget.editable) ? 100 : 75,
+                    width: (widget.editable) ? 100 : 75,
+                    child: Stack(
                       children: <Widget>[
-                        Container(
-                          padding: EdgeInsets.all(16),
-                          child: Container(
-                            height: (widget.editable) ? 100 : 75,
-                            width: (widget.editable) ? 100 : 75,
-                            child: Stack(
-                              children: <Widget>[
-                                AnimatedBuilder(
-                                  animation: imageUrl,
-                                  builder: (context, child){
-                                    return Container(
-                                      decoration: BoxDecoration(
-                                        image: DecorationImage(
-                                          image: new NetworkImage(imageUrl.value),
-                                          fit: BoxFit.cover,
-                                        ),
-                                        borderRadius: BorderRadius.circular(100.0),
-                                        border: Border.all(
-                                          color: Colors.black,
-                                          width: 1.0,
-                                        ),
-                                      ),
-                                    );
-                                  },
+                        AnimatedBuilder(
+                          animation: imageUrl,
+                          builder: (context, child){
+                            return Container(
+                              decoration: BoxDecoration(
+                                image: DecorationImage(
+                                  image: new NetworkImage(imageUrl.value),
+                                  fit: BoxFit.cover,
                                 ),
-                                (widget.editable == false) 
-                                ? Container()
-                                : new Stack(
-                                  children: <Widget>[
-                                    Align(
-                                      alignment: Alignment.bottomRight,
-                                      child: Container(
-                                        decoration: BoxDecoration(
-                                          borderRadius: BorderRadius.circular(80.0),
-                                          color: Colors.blue,
-                                          border: Border.all(
-                                            color: Colors.blue,
-                                            width: 4.0,
-                                          ),
-                                        ),
-                                        child: Icon(
-                                          Icons.edit,
-                                          color: Colors.white,
-                                          size: 16,
-                                        ),
-                                      ),
-                                    ),
-                                    FlatButton(
-                                      shape: CircleBorder(),
-                                      onPressed: () => imagePicker(),
-                                      child: Container(),
-                                    ),
-                                  ],
+                                borderRadius: BorderRadius.circular(100.0),
+                                border: Border.all(
+                                  color: Colors.black,
+                                  width: 1.0,
                                 ),
-                              ],
-                            ),
-                          ),
-                        ),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.stretch,
-                            children: <Widget>[
-                              new ProfileData(
-                                appData: widget.appData,
-                                userID: widget.appData.whoOwnsPostsID,
-                                posts: 12,
-                                comments: 35,
-                                likes: 1283,
                               ),
-                              (widget.editable == false)
-                              ? Container()
-                              : Padding(
-                                padding: const EdgeInsets.only(right: 16.0),
-                                child: AnimatedBuilder(
-                                  animation: editing,
-                                  builder: (BuildContext context, Widget child) {
-                                    return editDoneButton();
-                                  },
-                                ),
-                              )
-                            ],
-                          ),
-                        )
-                      ],
-                    ),
-                    AnimatedBuilder(
-                      animation: expandedField,
-                      builder: (BuildContext context, Widget child) {
-                        return Column(
+                            );
+                          },
+                        ),
+                        (widget.editable == false) 
+                        ? Container()
+                        : new Stack(
                           children: <Widget>[
-                            ClipRect(
-                              child: Padding(
-                                padding: const EdgeInsets.only(left: 16, right: 16),
-                                child: TextFormField(
-                                  focusNode: bioNode,
-                                  controller: bioController,
-                                  style: bioTextStyle,
-                                  maxLines: (expandedField.value) ? 7 : 1,
-                                  decoration: InputDecoration(
-                                    border: InputBorder.none,
+                            Align(
+                              alignment: Alignment.bottomRight,
+                              child: Container(
+                                decoration: BoxDecoration(
+                                  borderRadius: BorderRadius.circular(80.0),
+                                  color: Colors.blue,
+                                  border: Border.all(
+                                    color: Colors.blue,
+                                    width: 4.0,
                                   ),
                                 ),
-                              ),
-                            ),
-                            GestureDetector(
-                              onTap:  () => fieldSizeToggle(),
-                              behavior: HitTestBehavior.opaque,
-                              child: Container(
-                                padding: EdgeInsets.only(right: 16),
-                                alignment: Alignment.bottomRight,
-                                child: new Text(
-                                  (expandedField.value) ? "Show Less" : "Show More",
+                                child: Icon(
+                                  Icons.edit,
+                                  color: Colors.white,
+                                  size: 16,
                                 ),
                               ),
                             ),
+                            FlatButton(
+                              shape: CircleBorder(),
+                              onPressed: () => imagePicker(),
+                              child: Container(),
+                            ),
                           ],
-                        );
-                      },
+                        ),
+                      ],
                     ),
-                    PostList(
-                      appData: widget.appData,
-                      selectedMenuItem: widget.selectedMenuItem,
-                    ),
-                  ],
+                  ),
                 ),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: <Widget>[
+                      new ProfileData(
+                        appData: widget.appData,
+                        userID: widget.appData.whoOwnsPostsID,
+                        posts: 12,
+                        comments: 35,
+                        likes: 1283,
+                      ),
+                      (widget.editable == false)
+                      ? Container()
+                      : Padding(
+                        padding: const EdgeInsets.only(right: 16.0),
+                        child: AnimatedBuilder(
+                          animation: editing,
+                          builder: (BuildContext context, Widget child) {
+                            return editDoneButton();
+                          },
+                        ),
+                      )
+                    ],
+                  ),
+                )
               ],
             ),
-          ),
-          BottomNav(
-            appData: widget.appData,
-            selectedMenuItem: widget.selectedMenuItem,
-          ),
-        ],
-      ),
+            AnimatedBuilder(
+              animation: expandedField,
+              builder: (BuildContext context, Widget child) {
+                return Column(
+                  children: <Widget>[
+                    ClipRect(
+                      child: Padding(
+                        padding: const EdgeInsets.only(left: 16, right: 16),
+                        child: TextFormField(
+                          focusNode: bioNode,
+                          controller: bioController,
+                          style: bioTextStyle,
+                          maxLines: (expandedField.value) ? 7 : 1,
+                          decoration: InputDecoration(
+                            border: InputBorder.none,
+                          ),
+                        ),
+                      ),
+                    ),
+                    GestureDetector(
+                      onTap:  () => fieldSizeToggle(),
+                      behavior: HitTestBehavior.opaque,
+                      child: Container(
+                        padding: EdgeInsets.only(right: 16),
+                        alignment: Alignment.bottomRight,
+                        child: new Text(
+                          (expandedField.value) ? "Show Less" : "Show More",
+                        ),
+                      ),
+                    ),
+                  ],
+                );
+              },
+            ),
+            PostList(
+              appData: widget.appData,
+              selectedMenuItem: widget.selectedMenuItem,
+            ),
+          ],
+        ),
+      ],
     );
   }
 
