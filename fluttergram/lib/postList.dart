@@ -76,24 +76,31 @@ class _PostListState extends State<PostList> {
           List list = snapshot.data;
           return RefreshIndicator(
             onRefresh: () => forceReload(),
-            child: ListView.builder(
+            child: ListView(
               shrinkWrap: true,
               physics: ClampingScrollPhysics(),
-              itemCount: list.length,
-              itemBuilder: (context, index) => Post(
-                appData: widget.appData,
-                postID: list[index]["id"],
-                caption: list[index]["caption"],
-                imageUrl: list[index]["image_url"],
-                timeStamp: list[index]["created_at"],
-                postOwnerID: list[index]["user_id"],
-                likeCount: list[index]["likes_count"],
-                commentCount: list[index]["comments_count"],
-                postOwnerEmail: list[index]["user_email"],
-                postOwnerImageUrl: list[index]["user_profile_image_url"],
-                startLiked: list[index]["liked"],
-                selectedMenuItem: widget.selectedMenuItem,
-              ),
+              children: <Widget>[
+                ListView.builder(
+                  shrinkWrap: true,
+                  physics: ClampingScrollPhysics(),
+                  itemCount: list.length,
+                  itemBuilder: (context, index) => Post(
+                    appData: widget.appData,
+                    postID: list[index]["id"],
+                    caption: list[index]["caption"],
+                    imageUrl: list[index]["image_url"],
+                    timeStamp: list[index]["created_at"],
+                    postOwnerID: list[index]["user_id"],
+                    likeCount: list[index]["likes_count"],
+                    commentCount: list[index]["comments_count"],
+                    postOwnerEmail: list[index]["user_email"],
+                    postOwnerImageUrl: list[index]["user_profile_image_url"],
+                    startLiked: list[index]["liked"],
+                    selectedMenuItem: widget.selectedMenuItem,
+                  ),
+                ),
+                BottomBarSpacer(),
+              ],
             ),
           );
         }

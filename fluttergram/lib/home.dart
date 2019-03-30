@@ -35,14 +35,9 @@ class _HomeState extends State<Home> {
       ),
       body: Stack(
         children: <Widget>[
-          ListView(
-            children: <Widget>[
-              PostList(
-                appData: modForAllPosts(widget.appData),
-                selectedMenuItem: 0,
-              ),
-              BottomBarSpacer(),
-            ],
+          PostList(
+            appData: modForAllPosts(widget.appData),
+            selectedMenuItem: 0,
           ),
           Positioned(
             bottom: 0.0,
