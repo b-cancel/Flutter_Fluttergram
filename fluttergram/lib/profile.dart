@@ -54,6 +54,8 @@ class _ProfileState extends State<Profile> {
 
   final AsyncMemoizer _memoizer = AsyncMemoizer();
 
+  bool forceFetch = false;
+
   fetchData() {
     return this._memoizer.runOnce(() async {
       return await getData();
@@ -76,6 +78,7 @@ class _ProfileState extends State<Profile> {
 
       //process data
       if(response.statusCode == 200){ 
+        forceFetch = false; //in case this was triggered by it
         return jsonDecode(response.body);
         //TODO... get the count of user posts... user likes... and user comments
       }
@@ -95,6 +98,13 @@ class _ProfileState extends State<Profile> {
   bugFixRetEmail(data){
     if(data["email"] == null) return "null";
     else return data["email"].toString();
+  }
+
+  Future forceReload(){
+    print("force reloading");
+    forceFetch = true;
+    setState(() {});
+    return new Future<bool>.value(true);
   }
 
   @override
@@ -162,30 +172,33 @@ class _ProfileState extends State<Profile> {
       ),
       body: Stack(
         children: <Widget>[
-          FutureBuilder(
-            future: fetchData(),
-            builder: (BuildContext context, AsyncSnapshot snapshot) {
-              if(snapshot.connectionState == ConnectionState.done){
-                //we read in our email (it might be the same as what we passed or it might not)
-                if(email == loadingString){
-                  email = bugFixRetEmail(snapshot.data);
-                  updateEmail();
-                }
-                else email = bugFixRetEmail(snapshot.data);
+          RefreshIndicator(
+            onRefresh: () => forceReload(),
+            child: FutureBuilder(
+              future: (forceFetch) ? getData() : fetchData(),
+              builder: (BuildContext context, AsyncSnapshot snapshot) {
+                if(snapshot.connectionState == ConnectionState.done){
+                  //we read in our email (it might be the same as what we passed or it might not)
+                  if(email == loadingString){
+                    email = bugFixRetEmail(snapshot.data);
+                    updateEmail();
+                  }
+                  else email = bugFixRetEmail(snapshot.data);
 
-                //return the users profile
-                return UserProfilePage(
-                  //we only edit our own page
-                  editable: isEditable,
-                  appData: widget.appData,
-                  bio: snapshot.data["bio"],
-                  imageUrl: snapshot.data["profile_image_url"],
-                  spawnTime: snapshot.data["created_at"],
-                  selectedMenuItem: widget.selectedMenuItem,
-                );
-              }
-              else return CustomLoading();
-            },
+                  //return the users profile
+                  return UserProfilePage(
+                    //we only edit our own page
+                    editable: isEditable,
+                    appData: widget.appData,
+                    bio: snapshot.data["bio"],
+                    imageUrl: snapshot.data["profile_image_url"],
+                    spawnTime: snapshot.data["created_at"],
+                    selectedMenuItem: widget.selectedMenuItem,
+                  );
+                }
+                else return CustomLoading();
+              },
+            ),
           ),
           Positioned(
             bottom: 0.0,
@@ -263,7 +276,7 @@ class _UserProfilePageState extends State<UserProfilePage> {
   @override
   Widget build(BuildContext context) {
     return ListView(
-      shrinkWrap: true,
+      shrinkWrap: false,
       physics: ClampingScrollPhysics(),
       children: <Widget>[
         Column(
@@ -394,6 +407,7 @@ class _UserProfilePageState extends State<UserProfilePage> {
             PostList(
               appData: widget.appData,
               selectedMenuItem: widget.selectedMenuItem,
+              fromProfile: true,
             ),
           ],
         ),

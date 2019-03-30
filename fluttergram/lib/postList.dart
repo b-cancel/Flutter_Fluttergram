@@ -17,11 +17,13 @@ import 'package:http/http.dart' as http;
 class PostList extends StatefulWidget {
   final Data appData;
   final int selectedMenuItem;
+  final bool fromProfile;
 
   PostList({
     Key key,
     this.appData,
     @required this.selectedMenuItem,
+    this.fromProfile: false,
   }) : super(key: key);
 
   @override
@@ -77,10 +79,21 @@ class _PostListState extends State<PostList> {
           return RefreshIndicator(
             onRefresh: () => forceReload(),
             child: ListView(
-              shrinkWrap: true,
+              //---FROM PROFILE, FROM BELOW, FROM BELOW BELOW
+              //false, true, true => home works
+              //false, false, true => home works
+              //true, false, true => home works, profile disfigured
+              //true, true, true => home works, profile disfigured
+              //false, true, false => nope
+              //false, false, false => home blank
+              //true, false, false => home blank, profile disfigured
+              //true, true, false => home blank, profile disfigured
+              shrinkWrap: true, //TODO... under question
               physics: ClampingScrollPhysics(),
               children: <Widget>[
                 ListView.builder(
+                  //FROM ABOVE, FROM BELOW
+                  //true, true
                   shrinkWrap: true,
                   physics: ClampingScrollPhysics(),
                   itemCount: list.length,
