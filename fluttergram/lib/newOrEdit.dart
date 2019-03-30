@@ -9,7 +9,7 @@ class NewOrEditPost extends StatefulWidget {
     this.appData,
     this.isNew,
   });
-  
+
   _NewOrEditPostState createState() => _NewOrEditPostState();
 }
 
@@ -49,9 +49,14 @@ class _NewOrEditPostState extends State<NewOrEditPost> {
                child: new Text("New Post"),
             ),
           ),
-          BottomNav(
-            appData: widget.appData,
-            selectedMenuItem: 1,
+          Positioned(
+            bottom: 0.0,
+            left: 0.0,
+            right: 0.0,
+            child: BottomNav(
+              appData: widget.appData,
+              selectedMenuItem: 1,
+            ),
           ),
         ],
       ),

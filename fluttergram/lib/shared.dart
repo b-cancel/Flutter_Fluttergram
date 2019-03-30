@@ -5,6 +5,15 @@ import 'package:fluttergram/profile.dart';
 
 import 'package:outline_material_icons/outline_material_icons.dart';
 
+class BottomBarSpacer extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      height: 50,
+    );
+  }
+}
+
 class BottomNav extends StatelessWidget {
   final Data appData;
   final int selectedMenuItem;
@@ -16,54 +25,47 @@ class BottomNav extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    print("hero rebuild");
-
-    return Positioned(
-      bottom: 0,
-      left: 0,
-      right: 0,
-      child: Hero(
-        tag: 'bottomNav',
-        //NOTE: this material widget is required so during our transition to another page we dont get an error
-        //even if every page technically has a material ancestor because of the scaffold
-        //also also technically doesnt while its transition to the other page
-        child: Material(
-          child: Container(
-            decoration: BoxDecoration(
-              color: Colors.white,
-              border: Border(
-                top: BorderSide(
-                  color: Colors.grey,
-                  width: 1,
-                ),
+    return Hero(
+      tag: 'bottomNav',
+      //NOTE: this material widget is required so during our transition to another page we dont get an error
+      //even if every page technically has a material ancestor because of the scaffold
+      //also also technically doesnt while its transition to the other page
+      child: Material(
+        child: Container(
+          decoration: BoxDecoration(
+            color: Colors.white,
+            border: Border(
+              top: BorderSide(
+                color: Colors.grey,
+                width: 1,
               ),
             ),
-            child: new Row(
-              mainAxisSize: MainAxisSize.max,
-              mainAxisAlignment: MainAxisAlignment.spaceAround,
-              //NOTE: you CANT have this set to stretch
-              // crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: <Widget>[
-                MenuItem(
-                  appData: appData,
-                  thisMenuItem: 0,
-                  selectedMenuItem: selectedMenuItem,
-                  menuIcon: (selectedMenuItem == 0) ? Icons.home : OMIcons.home,
-                ),
-                MenuItem(
-                  appData: appData,
-                  thisMenuItem: 1,
-                  selectedMenuItem: selectedMenuItem,
-                  menuIcon: (selectedMenuItem == 1) ? Icons.add_box : OMIcons.addBox,
-                ),
-                MenuItem(
-                  appData: appData,
-                  thisMenuItem: 2,
-                  selectedMenuItem: selectedMenuItem,
-                  menuIcon: (selectedMenuItem == 2) ? Icons.account_box : OMIcons.accountBox,
-                ),
-              ],
-            ),
+          ),
+          child: new Row(
+            mainAxisSize: MainAxisSize.max,
+            mainAxisAlignment: MainAxisAlignment.spaceAround,
+            //NOTE: you CANT have this set to stretch
+            // crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: <Widget>[
+              MenuItem(
+                appData: appData,
+                thisMenuItem: 0,
+                selectedMenuItem: selectedMenuItem,
+                menuIcon: (selectedMenuItem == 0) ? Icons.home : OMIcons.home,
+              ),
+              MenuItem(
+                appData: appData,
+                thisMenuItem: 1,
+                selectedMenuItem: selectedMenuItem,
+                menuIcon: (selectedMenuItem == 1) ? Icons.add_box : OMIcons.addBox,
+              ),
+              MenuItem(
+                appData: appData,
+                thisMenuItem: 2,
+                selectedMenuItem: selectedMenuItem,
+                menuIcon: (selectedMenuItem == 2) ? Icons.account_box : OMIcons.accountBox,
+              ),
+            ],
           ),
         ),
       ),

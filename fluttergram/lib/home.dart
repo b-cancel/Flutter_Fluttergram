@@ -35,13 +35,23 @@ class _HomeState extends State<Home> {
       ),
       body: Stack(
         children: <Widget>[
-          PostList(
-            appData: modForAllPosts(widget.appData),
-            selectedMenuItem: 0,
+          ListView(
+            children: <Widget>[
+              PostList(
+                appData: modForAllPosts(widget.appData),
+                selectedMenuItem: 0,
+              ),
+              BottomBarSpacer(),
+            ],
           ),
-          BottomNav(
-            appData: widget.appData,
-            selectedMenuItem: 0,
+          Positioned(
+            bottom: 0.0,
+            left: 0.0,
+            right: 0.0,
+            child: BottomNav(
+              appData: widget.appData,
+              selectedMenuItem: 0,
+            ),
           ),
         ],
       ),

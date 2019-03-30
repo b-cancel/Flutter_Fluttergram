@@ -8,6 +8,7 @@ import 'package:fluttergram/main.dart';
 import 'dart:convert';
 import 'package:async/async.dart';
 import 'package:fluttergram/shared.dart';
+import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:http/http.dart' as http;
 
 class Comments extends StatefulWidget {
@@ -159,6 +160,7 @@ class _CommentsState extends State<Comments> {
                     comment: widget.postCaption,
                     timeStamp: widget.postTimeStamp,
                     selectedMenuItem: widget.selectedMenuItem,
+                    potentiallyEditable: false,
                   ),
                 ),
                 FutureBuilder(
@@ -181,12 +183,14 @@ class _CommentsState extends State<Comments> {
                           comment: list[index]["text"],
                           timeStamp: list[index]["created_at"],
                           selectedMenuItem: widget.selectedMenuItem,
+                          potentiallyEditable: true,
                         ),
                       );
                     }
                     else return CustomLoading();
                   },
                 ),
+                BottomBarSpacer(),
               ],
             ),
           ),
@@ -194,69 +198,77 @@ class _CommentsState extends State<Comments> {
             bottom: 0.0,
             left: 0.0,
             right: 0.0,
-            child: Container(
-              decoration: BoxDecoration(
-                color: Theme.of(context).scaffoldBackgroundColor,
-                border: Border(
-                  top: BorderSide(
-                    color: Colors.grey,
-                  )
-                )
-              ),
-              child: new TextFormField(
-                controller: newCommentText,
-                decoration: InputDecoration(
-                  contentPadding: EdgeInsets.fromLTRB(0, 16, 8, 16),
-                  border: InputBorder.none,
-                  hintText: "Add a comment...",
-                  hintStyle: TextStyle(
-                    color: Colors.grey
+            child: Hero(
+              tag: 'bottomNav',
+              //NOTE: this material widget is required so during our transition to another page we dont get an error
+              //even if every page technically has a material ancestor because of the scaffold
+              //also also technically doesnt while its transition to the other page
+              child: Material(
+                child: Container(
+                  decoration: BoxDecoration(
+                    color: Theme.of(context).scaffoldBackgroundColor,
+                    border: Border(
+                      top: BorderSide(
+                        color: Colors.grey,
+                      )
+                    )
                   ),
-                  icon: Container(
-                    padding: const EdgeInsets.fromLTRB(8, 8, 0, 8),
-                    child: FutureBuilder(
-                      future: fetchImageData(),
-                      builder: (BuildContext context, AsyncSnapshot snapshot) {
-                        //generate the url
-                        var imageUrl = "";
-                        if(snapshot.connectionState == ConnectionState.done){
-                          if(snapshot.data["profile_image_url"] == null){
-                            imageUrl = "https://prd-wret.s3-us-west-2.amazonaws.com/assets/palladium/production/s3fs-public/thumbnails/image/Placeholder_person.png";
-                          }
-                          else{
-                            imageUrl = snapshot.data["profile_image_url"];
-                          }
-                        }
-                        else{
-                          imageUrl = "https://prd-wret.s3-us-west-2.amazonaws.com/assets/palladium/production/s3fs-public/thumbnails/image/Placeholder_person.png";
-                        }
-
-                        //display
-                        return Container(
-                          height: 35.0,
-                          width: 35.0,
-                          decoration: new BoxDecoration(
-                            shape: BoxShape.circle,
-                            image: new DecorationImage(
-                              fit: BoxFit.fill,
-                              image: new NetworkImage(
-                                imageUrl,
-                              ),
-                            ),
-                          ),
-                        );
-                      },
-                    ),
-                  ),
-                  suffixIcon: new FlatButton(
-                    onPressed: () => newComment(),
-                    child: new Text(
-                      "Post",
-                      style: TextStyle(
-                        color: Colors.blue,
+                  child: new TextFormField(
+                    controller: newCommentText,
+                    decoration: InputDecoration(
+                      contentPadding: EdgeInsets.fromLTRB(0, 16, 8, 16),
+                      border: InputBorder.none,
+                      hintText: "Add a comment...",
+                      hintStyle: TextStyle(
+                        color: Colors.grey
                       ),
+                      icon: Container(
+                        padding: const EdgeInsets.fromLTRB(8, 8, 0, 8),
+                        child: FutureBuilder(
+                          future: fetchImageData(),
+                          builder: (BuildContext context, AsyncSnapshot snapshot) {
+                            //generate the url
+                            var imageUrl = "";
+                            if(snapshot.connectionState == ConnectionState.done){
+                              if(snapshot.data["profile_image_url"] == null){
+                                imageUrl = "https://prd-wret.s3-us-west-2.amazonaws.com/assets/palladium/production/s3fs-public/thumbnails/image/Placeholder_person.png";
+                              }
+                              else{
+                                imageUrl = snapshot.data["profile_image_url"];
+                              }
+                            }
+                            else{
+                              imageUrl = "https://prd-wret.s3-us-west-2.amazonaws.com/assets/palladium/production/s3fs-public/thumbnails/image/Placeholder_person.png";
+                            }
+
+                            //display
+                            return Container(
+                              height: 35.0,
+                              width: 35.0,
+                              decoration: new BoxDecoration(
+                                shape: BoxShape.circle,
+                                image: new DecorationImage(
+                                  fit: BoxFit.fill,
+                                  image: new NetworkImage(
+                                    imageUrl,
+                                  ),
+                                ),
+                              ),
+                            );
+                          },
+                        ),
+                      ),
+                      suffixIcon: new FlatButton(
+                        onPressed: () => newComment(),
+                        child: new Text(
+                          "Post",
+                          style: TextStyle(
+                            color: Colors.blue,
+                          ),
+                        ),
+                      )
                     ),
-                  )
+                  ),
                 ),
               ),
             ),
@@ -275,6 +287,7 @@ class PostComment extends StatefulWidget {
   final String comment;
   final String timeStamp;
   final int selectedMenuItem;
+  final bool potentiallyEditable;
 
   const PostComment({
     this.appData, //used to allow edit and delete
@@ -284,6 +297,7 @@ class PostComment extends StatefulWidget {
     this.comment,
     this.timeStamp,
     @required this.selectedMenuItem,
+    @required this.potentiallyEditable,
     Key key,
   }) : super(key: key);
 
@@ -367,6 +381,47 @@ class _PostCommentState extends State<PostComment> {
               ],
             )
           ),
+          (widget.potentiallyEditable 
+          && widget.appData.currentUserID == widget.userID)
+          ? PopupMenuButton(
+            onSelected: (val){
+              if(val == "edit"){
+                print("editing");
+              }
+              else{
+                print("deleting");
+              }
+            },
+            itemBuilder: (BuildContext context){
+              return [
+                PopupMenuItem<String>(
+                  value: "edit",
+                  child: Row(
+                    children: <Widget>[
+                      Icon(
+                        Icons.edit,
+                        size: 22,
+                      ),
+                      Text(" Edit"),
+                    ],
+                  ),
+                ),
+                PopupMenuItem<String>(
+                  value: "delete",
+                  child: Row(
+                    children: <Widget>[
+                      Icon(
+                        FontAwesomeIcons.trashAlt,
+                        size: 22,
+                      ),
+                      Text(" Delete"),
+                    ],
+                  ),
+                ),
+              ];
+            },
+          )
+          : Container(),
         ],
       ),
     );

@@ -137,38 +137,69 @@ class _ProfileState extends State<Profile> {
               ),
             ),
           ),
+          trailing: PopupMenuButton(
+            onSelected: (str){
+              //pop until the begining
+              Navigator.of(context).popUntil((route) => route.isFirst);
+              //replace whatever is left by an empty login screen
+              Navigator.pushReplacement(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => MyApp(),
+                ),
+              );
+            },
+            itemBuilder: (BuildContext context){
+              return [
+                PopupMenuItem<String>(
+                  value: "",
+                  child: Text("Sign Out"),
+                ),
+              ];
+            },
+          ),
         ),
       ),
       body: Stack(
         children: <Widget>[
-          FutureBuilder(
-            future: fetchData(),
-            builder: (BuildContext context, AsyncSnapshot snapshot) {
-              if(snapshot.connectionState == ConnectionState.done){
-                //we read in our email (it might be the same as what we passed or it might not)
-                if(email == loadingString){
-                  email = bugFixRetEmail(snapshot.data);
-                  updateEmail();
-                }
-                else email = bugFixRetEmail(snapshot.data);
+          ListView(
+            children: <Widget>[
+              FutureBuilder(
+                future: fetchData(),
+                builder: (BuildContext context, AsyncSnapshot snapshot) {
+                  if(snapshot.connectionState == ConnectionState.done){
+                    //we read in our email (it might be the same as what we passed or it might not)
+                    if(email == loadingString){
+                      email = bugFixRetEmail(snapshot.data);
+                      updateEmail();
+                    }
+                    else email = bugFixRetEmail(snapshot.data);
 
-                //return the users profile
-                return UserProfilePage(
-                  //we only edit our own page
-                  editable: isEditable,
-                  appData: widget.appData,
-                  bio: snapshot.data["bio"],
-                  imageUrl: snapshot.data["profile_image_url"],
-                  spawnTime: snapshot.data["created_at"],
-                  selectedMenuItem: widget.selectedMenuItem,
-                );
-              }
-              else return CustomLoading();
-            },
+                    //return the users profile
+                    return UserProfilePage(
+                      //we only edit our own page
+                      editable: isEditable,
+                      appData: widget.appData,
+                      bio: snapshot.data["bio"],
+                      imageUrl: snapshot.data["profile_image_url"],
+                      spawnTime: snapshot.data["created_at"],
+                      selectedMenuItem: widget.selectedMenuItem,
+                    );
+                  }
+                  else return CustomLoading();
+                },
+              ),
+              BottomBarSpacer(),
+            ],
           ),
-          BottomNav(
-            appData: widget.appData,
-            selectedMenuItem: widget.selectedMenuItem,
+          Positioned(
+            bottom: 0.0,
+            left: 0.0,
+            right: 0.0,
+            child: BottomNav(
+              appData: widget.appData,
+              selectedMenuItem: widget.selectedMenuItem,
+            ),
           ),
         ],
       ),
@@ -237,6 +268,8 @@ class _UserProfilePageState extends State<UserProfilePage> {
   @override
   Widget build(BuildContext context) {
     return ListView(
+      shrinkWrap: true,
+      physics: ClampingScrollPhysics(),
       children: <Widget>[
         Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
