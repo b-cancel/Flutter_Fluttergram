@@ -86,11 +86,7 @@ class _CommentsState extends State<Comments> {
             FocusScope.of(context).requestFocus(new FocusNode());
 
             //get the new file
-            var result = await getData();
-
-            //change the value to a string
-            //so that the animated builder is triggered
-            comments.value = json.encode(result); 
+            Future.delayed(Duration(milliseconds: 250), forceReload);
           }
           else{ 
             print(urlMod + " post comment fail");
@@ -131,8 +127,6 @@ class _CommentsState extends State<Comments> {
         }
     });
   }
-
-  ValueNotifier<String> comments = ValueNotifier<String>("");
 
   @override
   Widget build(BuildContext context) {
@@ -177,19 +171,22 @@ class _CommentsState extends State<Comments> {
                     if(snapshot.connectionState == ConnectionState.done){
                       //convert to list so we can actually use it
                       List list = snapshot.data;
-                      comments.value = json.encode(list);
 
-                      //NOTE: INSTEAD of using an animated builder
-                      //we might be able to change a ValueNotifier value when we press post
-                      //assuming that value notifier can be sent to another stateful widget
-                      //we can listen to that value notifier in the stateful widget 
-                      //only for the purpose of causing a set state in that stateful widget
-
-                      //return the data
-                      return CommentUpdater(
-                        comments: comments,
-                        appData: widget.appData,
-                        selectedMenuItem: widget.selectedMenuItem,
+                      //update stuff
+                      return ListView.builder(
+                        shrinkWrap: true,
+                        physics: ClampingScrollPhysics(),
+                        itemCount: list.length,
+                        itemBuilder: (context, index) => PostComment(
+                          appData: widget.appData,
+                          imageUrl: list[index]["user"]["profile_image_url"],
+                          email: list[index]["user"]["email"],
+                          userID: list[index]["user_id"],
+                          comment: list[index]["text"],
+                          timeStamp: list[index]["created_at"],
+                          selectedMenuItem: widget.selectedMenuItem,
+                          potentiallyEditable: true,
+                        ),
                       );
                     }
                     else return CustomLoading();
@@ -428,52 +425,6 @@ class _PostCommentState extends State<PostComment> {
           )
           : Container(),
         ],
-      ),
-    );
-  }
-}
-
-class CommentUpdater extends StatefulWidget {
-  final ValueNotifier<String> comments;
-  final Data appData;
-  final int selectedMenuItem;
-
-  CommentUpdater({
-    this.comments,
-    this.appData,
-    this.selectedMenuItem,
-  });
-
-  @override
-  _CommentUpdaterState createState() => _CommentUpdaterState();
-}
-
-class _CommentUpdaterState extends State<CommentUpdater> {
-  @override
-  void initState() { 
-    super.initState();
-    widget.comments.addListener((){
-      setState(() {});
-    });
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    print("building comment section");
-    List list = json.decode(widget.comments.value);
-    return ListView.builder(
-      shrinkWrap: true,
-      physics: ClampingScrollPhysics(),
-      itemCount: list.length,
-      itemBuilder: (context, index) => PostComment(
-        appData: widget.appData,
-        imageUrl: list[index]["user"]["profile_image_url"],
-        email: list[index]["user"]["email"],
-        userID: list[index]["user_id"],
-        comment: list[index]["text"],
-        timeStamp: list[index]["created_at"],
-        selectedMenuItem: widget.selectedMenuItem,
-        potentiallyEditable: true,
       ),
     );
   }
