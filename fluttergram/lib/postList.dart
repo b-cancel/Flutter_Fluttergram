@@ -189,6 +189,7 @@ class _PostState extends State<Post> {
             postID: widget.postID,
             postOwnerImageUrl: widget.postOwnerImageUrl, 
             postOwnerEmail: widget.postOwnerEmail, 
+            postOwnerID: widget.postOwnerID,
             postCaption: widget.caption,
             postTimeStamp: widget.timeStamp,
             appData: widget.appData,

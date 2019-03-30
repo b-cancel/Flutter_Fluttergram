@@ -15,6 +15,7 @@ class Comments extends StatefulWidget {
   final int postID;
   final String postOwnerImageUrl;
   final String postOwnerEmail;
+  final int postOwnerID;
   final String postCaption;
   final String postTimeStamp;
   final int selectedMenuItem;
@@ -25,6 +26,7 @@ class Comments extends StatefulWidget {
     this.postID,
     this.postOwnerImageUrl,
     this.postOwnerEmail,
+    @required this.postOwnerID,
     this.postCaption,
     this.postTimeStamp,
     @required this.selectedMenuItem,
@@ -152,6 +154,7 @@ class _CommentsState extends State<Comments> {
                   child: PostComment(
                     appData: widget.appData,
                     imageUrl: widget.postOwnerImageUrl,
+                    userID: widget.postOwnerID,
                     email: widget.postOwnerEmail,
                     comment: widget.postCaption,
                     timeStamp: widget.postTimeStamp,
@@ -289,6 +292,17 @@ class PostComment extends StatefulWidget {
 }
 
 class _PostCommentState extends State<PostComment> {
+  void goToThisUsersProfile(){
+    goToUserProfile(
+      context, 
+      widget.appData, 
+      widget.userID, 
+      widget.email,
+      widget.selectedMenuItem,
+      reload: false,
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Padding(
@@ -296,15 +310,18 @@ class _PostCommentState extends State<PostComment> {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.start,
         children: <Widget>[
-          Container(
-            height: 40.0,
-            width: 40.0,
-            decoration: new BoxDecoration(
-              shape: BoxShape.circle,
-              image: new DecorationImage(
-                fit: BoxFit.fill,
-                image: new NetworkImage(
-                  widget.imageUrl,
+          InkWell(
+            onTap: () => goToThisUsersProfile(),
+            child: Container(
+              height: 40.0,
+              width: 40.0,
+              decoration: new BoxDecoration(
+                shape: BoxShape.circle,
+                image: new DecorationImage(
+                  fit: BoxFit.fill,
+                  image: new NetworkImage(
+                    widget.imageUrl,
+                  ),
                 ),
               ),
             ),
@@ -328,17 +345,7 @@ class _PostCommentState extends State<PostComment> {
                           color: Colors.black,
                         ),
                         recognizer: TapGestureRecognizer()
-                          ..onTap = (){
-                            print("tapped");
-                            goToUserProfile(
-                              context, 
-                              widget.appData, 
-                              widget.userID, 
-                              widget.email,
-                              widget.selectedMenuItem,
-                              reload: false,
-                            );
-                          },
+                        ..onTap = () => goToThisUsersProfile()
                       ),
                       TextSpan(
                         text: " " + widget.comment,
