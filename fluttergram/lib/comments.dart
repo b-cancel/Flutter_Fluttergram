@@ -186,26 +186,10 @@ class _CommentsState extends State<Comments> {
                       //only for the purpose of causing a set state in that stateful widget
 
                       //return the data
-                      return AnimatedBuilder(
-                        animation: comments,
-                        builder: (BuildContext context, Widget child) {
-                          List list = json.decode(comments.value);
-                          return ListView.builder(
-                            shrinkWrap: true,
-                            physics: ClampingScrollPhysics(),
-                            itemCount: list.length,
-                            itemBuilder: (context, index) => PostComment(
-                              appData: widget.appData,
-                              imageUrl: list[index]["user"]["profile_image_url"],
-                              email: list[index]["user"]["email"],
-                              userID: list[index]["user_id"],
-                              comment: list[index]["text"],
-                              timeStamp: list[index]["created_at"],
-                              selectedMenuItem: widget.selectedMenuItem,
-                              potentiallyEditable: true,
-                            ),
-                          );
-                        },
+                      return CommentUpdater(
+                        comments: comments,
+                        appData: widget.appData,
+                        selectedMenuItem: widget.selectedMenuItem,
                       );
                     }
                     else return CustomLoading();
@@ -444,6 +428,52 @@ class _PostCommentState extends State<PostComment> {
           )
           : Container(),
         ],
+      ),
+    );
+  }
+}
+
+class CommentUpdater extends StatefulWidget {
+  final ValueNotifier<String> comments;
+  final Data appData;
+  final int selectedMenuItem;
+
+  CommentUpdater({
+    this.comments,
+    this.appData,
+    this.selectedMenuItem,
+  });
+
+  @override
+  _CommentUpdaterState createState() => _CommentUpdaterState();
+}
+
+class _CommentUpdaterState extends State<CommentUpdater> {
+  @override
+  void initState() { 
+    super.initState();
+    widget.comments.addListener((){
+      setState(() {});
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    print("building comment section");
+    List list = json.decode(widget.comments.value);
+    return ListView.builder(
+      shrinkWrap: true,
+      physics: ClampingScrollPhysics(),
+      itemCount: list.length,
+      itemBuilder: (context, index) => PostComment(
+        appData: widget.appData,
+        imageUrl: list[index]["user"]["profile_image_url"],
+        email: list[index]["user"]["email"],
+        userID: list[index]["user_id"],
+        comment: list[index]["text"],
+        timeStamp: list[index]["created_at"],
+        selectedMenuItem: widget.selectedMenuItem,
+        potentiallyEditable: true,
       ),
     );
   }
