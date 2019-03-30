@@ -59,7 +59,6 @@ class _CommentsState extends State<Comments> {
       headers: {HttpHeaders.authorizationHeader: "Bearer " + widget.appData.token}
     ).then((response){
         if(response.statusCode == 200){
-          print("getting data");
           return jsonDecode(response.body);
         }
         else{ 
@@ -82,9 +81,16 @@ class _CommentsState extends State<Comments> {
         headers: {HttpHeaders.authorizationHeader: "Bearer " + widget.appData.token}
       ).then((response) async{
           if(response.statusCode == 200){
+            //wipe and unfocus the text field
             newCommentText.text = ""; 
             FocusScope.of(context).requestFocus(new FocusNode());
-            Future.delayed(Duration(milliseconds: 250), () => forceReload());
+
+            //get the new file
+            var result = await getData();
+
+            //change the value to a string
+            //so that the animated builder is triggered
+            comments.value = json.encode(result); 
           }
           else{ 
             print(urlMod + " post comment fail");
@@ -125,6 +131,8 @@ class _CommentsState extends State<Comments> {
         }
     });
   }
+
+  ValueNotifier<String> comments = ValueNotifier<String>("");
 
   @override
   Widget build(BuildContext context) {
@@ -169,22 +177,32 @@ class _CommentsState extends State<Comments> {
                     if(snapshot.connectionState == ConnectionState.done){
                       //convert to list so we can actually use it
                       List list = snapshot.data;
+                      comments.value = json.encode(list);
 
                       //return the data
-                      return ListView.builder(
-                        shrinkWrap: true,
-                        physics: ClampingScrollPhysics(),
-                        itemCount: list.length,
-                        itemBuilder: (context, index) => PostComment(
-                          appData: widget.appData,
-                          imageUrl: list[index]["user"]["profile_image_url"],
-                          email: list[index]["user"]["email"],
-                          userID: list[index]["user_id"],
-                          comment: list[index]["text"],
-                          timeStamp: list[index]["created_at"],
-                          selectedMenuItem: widget.selectedMenuItem,
-                          potentiallyEditable: true,
-                        ),
+                      return AnimatedBuilder(
+                        animation: comments,
+                        builder: (BuildContext context, Widget child) {
+
+                          print("animated builder construct");
+                          List list = json.decode(comments.value);
+
+                          return ListView.builder(
+                            shrinkWrap: true,
+                            physics: ClampingScrollPhysics(),
+                            itemCount: list.length,
+                            itemBuilder: (context, index) => PostComment(
+                              appData: widget.appData,
+                              imageUrl: list[index]["user"]["profile_image_url"],
+                              email: list[index]["user"]["email"],
+                              userID: list[index]["user_id"],
+                              comment: list[index]["text"],
+                              timeStamp: list[index]["created_at"],
+                              selectedMenuItem: widget.selectedMenuItem,
+                              potentiallyEditable: true,
+                            ),
+                          );
+                        },
                       );
                     }
                     else return CustomLoading();
