@@ -1,5 +1,6 @@
 //flutter
 import 'package:flutter/material.dart';
+import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 
 //dart
 import 'dart:convert';
@@ -52,9 +53,28 @@ class _LoginPageState extends State<LoginPage> {
     else return 'Create a Fluttergram Account';
   }
 
-  String question(){
-    if(login.value) return "Don't have an Account?";
-    else return "Already have an Account?";
+  Widget question(){
+    return RichText(
+      text: TextSpan(
+        children: [
+          TextSpan(
+            text: (login.value == false) ? "Don't have an account?" : "Already have an account?",
+            style: TextStyle(
+              color: Colors.grey,
+              fontSize: 12,
+            ),
+          ),
+          TextSpan(
+            text: (login.value == false) ? " Sign up." : " Log in.",
+            style: TextStyle(
+              fontWeight: FontWeight.bold,
+              color: Color.fromARGB(255, 38, 38, 38),
+              fontSize: 12,
+            ),
+          ),
+        ]
+      ),
+    );
   }
 
   String action(){
@@ -88,9 +108,6 @@ class _LoginPageState extends State<LoginPage> {
   void loginUser(){
     var urlMod = widget.appData.url + "/api";
     urlMod += "/login" + "?username=" + username.text + "&password=" + password.text;  
-
-    print("get request on url " + urlMod);
-
     http.get(urlMod).then((response){
         //confirm valid response
         if(response.statusCode == 200){ 
@@ -156,19 +173,34 @@ class _LoginPageState extends State<LoginPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: Container(
-        padding: EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          gradient: LinearGradient( 
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [
-              const Color.fromRGBO(145, 85, 179, 1), 
-              const Color.fromRGBO(198, 55, 102, 1),
-            ], 
-            tileMode: TileMode.repeated,
+      backgroundColor: Colors.white,
+      appBar: AppBar(
+        backgroundColor: Colors.white,
+        elevation: 0,
+        title: Container(
+          padding: EdgeInsets.all(16),
+          child: Row(
+            mainAxisSize: MainAxisSize.max,
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: <Widget>[
+              new Text(
+                "English (United States)",
+                style: TextStyle(
+                  color: Colors.grey,
+                  fontSize: 12,
+                ),
+              ),
+              new Icon(
+                FontAwesomeIcons.chevronDown,
+                size: 8,
+                color: Colors.grey,
+              ),
+            ],
           ),
         ),
+      ),
+      body: Container(
+        padding: EdgeInsets.all(16),
         child: Center(
           child: AnimatedBuilder(
             animation: login,
@@ -177,65 +209,71 @@ class _LoginPageState extends State<LoginPage> {
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: <Widget>[
-                  Container(
-                    padding: EdgeInsets.all(16),
-                    alignment: Alignment.center,
-                    child: new Text(
-                      "Fluttergram",
-                      style: TextStyle(
-                        fontSize: 32,
-                        color: Colors.white,
+                  Padding(
+                    padding: const EdgeInsets.only(bottom: 16),
+                    child: Container(
+                      padding: EdgeInsets.all(16),
+                      alignment: Alignment.center,
+                      child: new Text(
+                        "Fluttergram",
+                        style: TextStyle(
+                          fontSize: 32,
+                        ),
                       ),
                     ),
                   ),
                   Container(
-                    color: Color.fromARGB(255, 175, 80, 150), 
-                    padding: EdgeInsets.all(4),
+                    decoration: ShapeDecoration(
+                      color: Color.fromARGB(255, 235, 235, 235),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.all(Radius.circular(5)),
+                        side: new BorderSide(
+                          color: Colors.grey,
+                        ),
+                      )
+                    ),
                     child: new TextFormField(
-                      style: TextStyle(
-                        color: Colors.white,
-                      ),
-                      cursorColor: Colors.white,
                       autofocus: true,
                       keyboardType: TextInputType.emailAddress,
                       controller: username,
                       decoration: InputDecoration(
+                        contentPadding: EdgeInsets.all(8),
                         border: InputBorder.none,
-                        hintText: "Username",
-                        hintStyle: TextStyle(
-                          color: Colors.white,
-                        ),
+                        hintText: "Email",
                       ),
                     ),
                   ),
                   Container(
-                    height: 16,
+                    height: 12,
                     child: Container(),
                   ),
                   Container(
-                    color: Color.fromARGB(255, 175, 80, 150), 
-                    padding: EdgeInsets.all(4),
+                    decoration: ShapeDecoration(
+                      color: Color.fromARGB(255, 235, 235, 235),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.all(Radius.circular(5)),
+                        side: new BorderSide(
+                          color: Colors.grey,
+                        ),
+                      )
+                    ),
                     child: new TextFormField(
-                      style: TextStyle(
-                        color: Colors.white,
-                      ),
-                      cursorColor: Colors.white,
                       obscureText: true,
                       controller: password,
                       decoration: InputDecoration(
+                        contentPadding: EdgeInsets.all(8),
                         border: InputBorder.none,
                         hintText: "Password",
-                        hintStyle: TextStyle(
-                          color: Colors.white,
-                        ),
                       ),
                     ),
                   ),
-                  new OutlineButton(
-                    borderSide: BorderSide(
-                      color: Colors.white, 
-                    ),
+                  Container(
+                    height: 12,
+                    child: Container(),
+                  ),
+                  new RaisedButton(
                     onPressed: submitAction,
+                    color: Colors.blue,
                     child: new Text(
                       action(),
                       style: TextStyle(
@@ -252,18 +290,9 @@ class _LoginPageState extends State<LoginPage> {
       bottomNavigationBar: BottomAppBar(
         child: Container(
           decoration: BoxDecoration(
-            gradient: LinearGradient( 
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-              colors: [
-                const Color.fromRGBO(165, 101, 136, 1), 
-                const Color.fromRGBO(203, 66, 105, 1),
-              ], 
-              tileMode: TileMode.repeated,
-            ),
             border: Border(
               top: BorderSide(
-                color: Color.fromRGBO(255, 255, 255, .75),
+                color: Colors.grey,
               ),
             ),
           ),
@@ -272,7 +301,7 @@ class _LoginPageState extends State<LoginPage> {
             builder: (BuildContext context, Widget child) {
               return new FlatButton(
                 onPressed: () => login.value = !login.value,
-                child: new Text(question()),
+                child: question(),
               );
             },
           ),

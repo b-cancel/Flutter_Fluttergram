@@ -30,7 +30,7 @@ class Profile extends StatefulWidget {
     Key key,
     this.appData,
     @required this.selectedMenuItem,
-    @required this.email,
+    this.email: "",
   }) : super(key: key);
 
   _ProfileState createState() => _ProfileState();
@@ -38,12 +38,16 @@ class Profile extends StatefulWidget {
 
 class _ProfileState extends State<Profile> {
 
-  String email = "";
-  String loadingString = "Loading...";
+  String email;
+  String loadingString;
 
   @override
   void initState() { 
     super.initState();
+
+    email = "";
+    loadingString = "Loading...";
+
     if(widget.email == "") email = loadingString;
     else email = widget.email;
   }
@@ -66,6 +70,7 @@ class _ProfileState extends State<Profile> {
       urlMod, 
       headers: {HttpHeaders.authorizationHeader: "Bearer " + widget.appData.token}
     ).then((response){
+      //NOTE: I have no idea why this is needed... but it repaired a bug... 
       //restore old owner
       widget.appData.whoOwnsPostsID = oldOwner;
 
@@ -83,14 +88,19 @@ class _ProfileState extends State<Profile> {
 
   updateEmail(){
     Future.delayed(Duration(microseconds: 1), (){
-      print("settting state for email");
       setState(() {});
     });
+  }
+
+  bugFixRetEmail(data){
+    if(data["email"] == null) return "null";
+    else return data["email"].toString();
   }
 
   @override
   Widget build(BuildContext context) {
     bool isEditable = widget.appData.whoOwnsPostsID == widget.appData.currentUserID;
+    print("is editable " + isEditable.toString() + " who " + widget.appData.whoOwnsPostsID.toString() + " curr " + widget.appData.currentUserID.toString());
 
     //show loading in the meantime
     return Scaffold(
@@ -122,7 +132,7 @@ class _ProfileState extends State<Profile> {
                   : new Icon(
                     FontAwesomeIcons.chevronDown,
                     size: 8,
-                  ) ,
+                  ),
                 ],
               ),
             ),
@@ -137,17 +147,16 @@ class _ProfileState extends State<Profile> {
               if(snapshot.connectionState == ConnectionState.done){
                 //we read in our email (it might be the same as what we passed or it might not)
                 if(email == loadingString){
-                  email = snapshot.data["email"];
+                  email = bugFixRetEmail(snapshot.data);
                   updateEmail();
                 }
-                else email = snapshot.data["email"];
+                else email = bugFixRetEmail(snapshot.data);
 
                 //return the users profile
                 return UserProfilePage(
                   //we only edit our own page
                   editable: isEditable,
                   appData: widget.appData,
-                  email: snapshot.data["email"],
                   bio: snapshot.data["bio"],
                   imageUrl: snapshot.data["profile_image_url"],
                   spawnTime: snapshot.data["created_at"],
@@ -172,7 +181,6 @@ class _ProfileState extends State<Profile> {
 class UserProfilePage extends StatefulWidget {
   final bool editable;
   final Data appData;
-  final String email;
   final String imageUrl;
   final String bio;
   final String spawnTime;
@@ -181,7 +189,6 @@ class UserProfilePage extends StatefulWidget {
   UserProfilePage({
     this.editable,
     this.appData,
-    this.email,
     this.imageUrl,
     this.bio,
     this.spawnTime,

@@ -144,23 +144,30 @@ class Data {
 }
 
 Data modForUser(Data appData, int id){
-  appData.whoOwnsPostsID = id;
-  return appData;
+  Data newAppData = new Data();
+  newAppData.token = appData.token;
+  newAppData.url = appData.url;
+  newAppData.currentUserID = appData.currentUserID;
+  newAppData.whoOwnsPostsID = id;
+  return newAppData;
 }
 
 Data modForAllPosts(Data appData){
-  appData.whoOwnsPostsID = -1; //the secret code for all posts
-  return appData;
+  //-1 is the secret code for allposts
+  return modForUser(appData, -1); 
 }
 
 void goToUserProfile(BuildContext context, Data appData, int profileUserID, String profileUserEmail, int selectedMenuItem, {bool reload}){
+  print("going to user profile");
+  Data newAppData = modForUser(appData, profileUserID);
+  print("going to user " + profileUserID.toString() + " and " + newAppData.whoOwnsPostsID.toString());
   if(reload){
     Navigator.pushReplacement(
       context,
       MaterialPageRoute(
         builder: (context) => Profile(
           email: profileUserEmail,
-          appData: modForUser(appData, profileUserID),
+          appData: newAppData,
           selectedMenuItem: selectedMenuItem,
         ),
       ),
@@ -172,7 +179,7 @@ void goToUserProfile(BuildContext context, Data appData, int profileUserID, Stri
       MaterialPageRoute(
         builder: (context) => Profile(
           email: profileUserEmail,
-          appData: modForUser(appData, profileUserID),
+          appData: newAppData,
           selectedMenuItem: selectedMenuItem,
         ),
       ),
@@ -211,68 +218,3 @@ class TopBar extends StatelessWidget {
     );
   }
 }
-
-      /*
-      PreferredSize(
-        preferredSize: Size.fromHeight(45),
-          child: new AppBar(
-          backgroundColor: new Color(0xfff8faf8),
-          elevation: 1.0,
-          leading: new Icon(Icons.camera_alt),
-          title: SizedBox(
-            child: new Text("Fluttergram"),
-          ),
-        ),
-      ),
-      */
-
-      /*
-      PreferredSize(
-        preferredSize: Size.fromHeight(45),
-        child: AppBar(
-          backgroundColor: new Color(0xfff8faf8),
-          elevation: 1.0,
-          leading: (isEditable) 
-          ? Container() 
-          : IconButton(
-            icon: const BackButtonIcon(),
-            color: Colors.black,
-            tooltip: MaterialLocalizations.of(context).backButtonTooltip,
-            onPressed: () {
-              Navigator.maybePop(context).then((value){
-              });
-            }
-          ),
-          centerTitle: false,
-          title: Transform.translate(
-            offset: Offset((isEditable) ? -60 : 0, 0),
-            child: Container(
-              child: new Row(
-                mainAxisSize: MainAxisSize.min,
-                mainAxisAlignment: MainAxisAlignment.start,
-                children: <Widget>[
-                  Padding(
-                    padding: (isEditable)
-                    ? EdgeInsets.only(right: 4.0)
-                    : EdgeInsets.all(0),
-                    child: new Text(
-                      (email).split('@')[0],
-                      style: TextStyle(
-                        color: Colors.black,
-                        fontSize: 16,
-                      ),
-                    ),
-                  ),
-                  (isEditable == false) 
-                  ? Container()
-                  : new Icon(
-                    FontAwesomeIcons.chevronDown,
-                    size: 8,
-                  ) ,
-                ],
-              ),
-            ),
-          ),
-        ),
-      ),
-      */

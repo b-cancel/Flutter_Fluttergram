@@ -165,8 +165,6 @@ class _CommentsState extends State<Comments> {
                       //convert to list so we can actually use it
                       List list = snapshot.data;
 
-                      print(list.length.toString() + " comments");
-
                       //return the data
                       return ListView.builder(
                         shrinkWrap: true,
@@ -330,14 +328,17 @@ class _PostCommentState extends State<PostComment> {
                           color: Colors.black,
                         ),
                         recognizer: TapGestureRecognizer()
-                          ..onTap = () => goToUserProfile(
-                            context, 
-                            widget.appData, 
-                            widget.userID, 
-                            widget.email,
-                            widget.selectedMenuItem,
-                            reload: false,
-                          ),
+                          ..onTap = (){
+                            print("tapped");
+                            goToUserProfile(
+                              context, 
+                              widget.appData, 
+                              widget.userID, 
+                              widget.email,
+                              widget.selectedMenuItem,
+                              reload: false,
+                            );
+                          },
                       ),
                       TextSpan(
                         text: " " + widget.comment,

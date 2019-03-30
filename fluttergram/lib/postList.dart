@@ -320,7 +320,7 @@ class _PostState extends State<Post> {
                 padding: const EdgeInsets.fromLTRB(16, 0, 16, 4),
                 alignment: Alignment.topLeft,
                 child: Text(
-                  "View all comments", 
+                  "View " + ((widget.commentCount == 1) ? "1 comment" : widget.commentCount.toString() + " comments"), 
                   style: TextStyle(color: Colors.grey),
                 ),
               ),
