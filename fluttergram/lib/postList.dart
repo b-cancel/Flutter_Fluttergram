@@ -76,50 +76,56 @@ class _PostListState extends State<PostList> {
         print("future running again");
         if(snapshot.connectionState == ConnectionState.done){
           List list = snapshot.data;
-          return RefreshIndicator(
+          return (widget.fromProfile)
+          ? other(list)
+          : RefreshIndicator(
             onRefresh: () => forceReload(),
-            child: ListView(
-              //---FROM PROFILE, FROM BELOW, FROM BELOW BELOW
-              //false, true, true => home works
-              //false, false, true => home works
-              //true, false, true => home works, profile disfigured
-              //true, true, true => home works, profile disfigured
-              //false, true, false => nope
-              //false, false, false => home blank
-              //true, false, false => home blank, profile disfigured
-              //true, true, false => home blank, profile disfigured
-              shrinkWrap: true, //TODO... under question
-              physics: ClampingScrollPhysics(),
-              children: <Widget>[
-                ListView.builder(
-                  //FROM ABOVE, FROM BELOW
-                  //true, true
-                  shrinkWrap: true,
-                  physics: ClampingScrollPhysics(),
-                  itemCount: list.length,
-                  itemBuilder: (context, index) => Post(
-                    appData: widget.appData,
-                    postID: list[index]["id"],
-                    caption: list[index]["caption"],
-                    imageUrl: list[index]["image_url"],
-                    timeStamp: list[index]["created_at"],
-                    postOwnerID: list[index]["user_id"],
-                    likeCount: list[index]["likes_count"],
-                    commentCount: list[index]["comments_count"],
-                    postOwnerEmail: list[index]["user_email"],
-                    postOwnerImageUrl: list[index]["user_profile_image_url"],
-                    startLiked: list[index]["liked"],
-                    selectedMenuItem: widget.selectedMenuItem,
-                  ),
-                ),
-                BottomBarSpacer(),
-              ],
-            ),
+            child: other(list),
           );
         }
         else return CustomLoading();
       },
     );
+  }
+
+  ListView other(List list) {
+    return ListView(
+            //---FROM PROFILE, FROM BELOW, FROM BELOW BELOW
+            //false, true, true => home works
+            //false, false, true => home works
+            //true, false, true => home works, profile disfigured
+            //true, true, true => home works, profile disfigured
+            //false, true, false => nope
+            //false, false, false => home blank
+            //true, false, false => home blank, profile disfigured
+            //true, true, false => home blank, profile disfigured
+            shrinkWrap: true, //TODO... under question
+            physics: ClampingScrollPhysics(),
+            children: <Widget>[
+              ListView.builder(
+                //FROM ABOVE, FROM BELOW
+                //true, true
+                shrinkWrap: true,
+                physics: ClampingScrollPhysics(),
+                itemCount: list.length,
+                itemBuilder: (context, index) => Post(
+                  appData: widget.appData,
+                  postID: list[index]["id"],
+                  caption: list[index]["caption"],
+                  imageUrl: list[index]["image_url"],
+                  timeStamp: list[index]["created_at"],
+                  postOwnerID: list[index]["user_id"],
+                  likeCount: list[index]["likes_count"],
+                  commentCount: list[index]["comments_count"],
+                  postOwnerEmail: list[index]["user_email"],
+                  postOwnerImageUrl: list[index]["user_profile_image_url"],
+                  startLiked: list[index]["liked"],
+                  selectedMenuItem: widget.selectedMenuItem,
+                ),
+              ),
+              BottomBarSpacer(),
+            ],
+          );
   }
 }
 
