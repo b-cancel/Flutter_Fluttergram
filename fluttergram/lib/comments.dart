@@ -186,6 +186,7 @@ class _CommentsState extends State<Comments> {
                           timeStamp: list[index]["created_at"],
                           selectedMenuItem: widget.selectedMenuItem,
                           potentiallyEditable: true,
+                          commentID: list[index]["id"],
                         ),
                       );
                     }
@@ -290,6 +291,7 @@ class PostComment extends StatefulWidget {
   final String timeStamp;
   final int selectedMenuItem;
   final bool potentiallyEditable;
+  final int commentID;
 
   const PostComment({
     this.appData, //used to allow edit and delete
@@ -300,6 +302,7 @@ class PostComment extends StatefulWidget {
     this.timeStamp,
     @required this.selectedMenuItem,
     @required this.potentiallyEditable,
+    @required this.commentID,
     Key key,
   }) : super(key: key);
 
@@ -319,9 +322,34 @@ class _PostCommentState extends State<PostComment> {
     );
   }
 
+  Future deleteComment() async{
+    //retreive data from server
+    var urlMod = widget.appData.url + "/api/v1/comments/" + widget.commentID.toString();
+
+    return await http.delete(
+      urlMod, 
+      headers: {HttpHeaders.authorizationHeader: "Bearer " + widget.appData.token}
+    ).then((response){
+      if(response.statusCode == 200){
+        //hide comment on the client
+        alreadyDeleted = true;
+        setState(() {});
+        //TODO... get the count of user posts... user likes... and user comments
+      }
+      else{ 
+        print(urlMod + " get profile fail");
+        //TODO... trigger some visual error
+      }
+    });
+  }
+
+  bool alreadyDeleted = false;
+
   @override
   Widget build(BuildContext context) {
-    return Padding(
+    return (alreadyDeleted)
+    ? Container()
+    : Padding(
       padding: const EdgeInsets.fromLTRB(16.0, 16.0, 0.0, 8.0),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.start,
@@ -388,11 +416,9 @@ class _PostCommentState extends State<PostComment> {
           ? PopupMenuButton(
             onSelected: (val){
               if(val == "edit"){
-                print("editing");
+                print("editing " + widget.commentID.toString());
               }
-              else{
-                print("deleting");
-              }
+              else deleteComment();
             },
             itemBuilder: (BuildContext context){
               return [

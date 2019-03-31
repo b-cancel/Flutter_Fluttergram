@@ -1,7 +1,10 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:fluttergram/home.dart';
 import 'package:fluttergram/newOrEdit.dart';
 import 'package:fluttergram/profile.dart';
+import 'package:image_picker/image_picker.dart';
 
 import 'package:outline_material_icons/outline_material_icons.dart';
 
@@ -91,36 +94,15 @@ class MenuItem extends StatelessWidget {
   Widget build(BuildContext context) {
     return IconButton(
       onPressed: (){
-        if(thisMenuItem != selectedMenuItem){
-          print("navigating to new page");
-          Navigator.push(
-            context,
-            MaterialPageRoute(
-              //NOTE: this MUST be like this
-              builder: (context) => navFunc(appData, thisMenuItem),
-            ),
-          );
+        print("this menu item " + thisMenuItem.toString());
+        if(thisMenuItem == 1){
+          print("selecting image");
+          //ADD reload (for now)
+          selectImage(false, context, appData); //from gallery
         }
         else{
-          print("refreshing current page");
-          //NOTE: refreshing HOME is unoptimal... 
-          //but given that in SOME cases its the route at the end of the stack
-          //nothing else can be done
-          //NOTE: we could replace ONLY when its the route at the end of the stack
-          //but currently we have no way of identifying that
-          //we CAN give a route a name and see if the navigator is on that name
-          //so we MIGHT be able to give it a random route ID
-          //then we save the first random route ID in appData
-          //then check if we are or are not on the first route
-
-          //NOTE: refreshing ADD will never happen in real life
-          //since tapping add will take you to another page
-
-          //NOTE: refreshing profile will ALWAYS be possible
-          //since it NEVER is the FIRST route
-          if(thisMenuItem == 2){
-            //PROFILE reload (always possible to pop and push)
-            Navigator.pop(context);
+          if(thisMenuItem != selectedMenuItem){
+            print("pushing new route");
             Navigator.push(
               context,
               MaterialPageRoute(
@@ -130,8 +112,12 @@ class MenuItem extends StatelessWidget {
             );
           }
           else{
-            //HOME reload 
-            //ADD reload (for now)
+            print("reloading route");
+            //HOME and PROFILE reloads
+
+            //NOTE: profile will always reload 
+            //since its never at the begining of the stack
+
             popPushOrReplace(context, appData, thisMenuItem);
           }
         }
@@ -213,25 +199,7 @@ void goToUserProfile(BuildContext context, Data appData, int profileUserID, Stri
 }
 
 void popPushOrReplace(BuildContext context, Data appData, int thisMenuItem) async{
-  bool popped = await Navigator.maybePop(context);
-  print("could we pop? -------------------------" + popped.toString());
-  if(popped){
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (context) => navFunc(appData, thisMenuItem),
-      ),
-    );
-  }
-  else{
-    Navigator.pushReplacement(
-      context,
-      MaterialPageRoute(
-        //NOTE: this MUST be like this
-        builder: (context) => navFunc(appData, thisMenuItem),
-      ),
-    );
-  }
+  
 }
 
 class TopBar extends StatelessWidget {
@@ -264,4 +232,24 @@ class TopBar extends StatelessWidget {
       ),
     );
   }
+}
+
+Future selectImage(bool fromCamera, BuildContext context, Data appData) async {
+  //grab the image in your desired method
+  File image = await ImagePicker.pickImage(
+    source: (fromCamera) ? ImageSource.camera : ImageSource.gallery,
+  );
+
+  //navigate to the page where we plugin our caption
+  Navigator.push(
+    context,
+    MaterialPageRoute(
+      builder: (context) => NewOrEditPost(
+        appData: appData, 
+        isNew: true,
+        newImage: image,
+      ),
+    ),
+  );
+  
 }

@@ -29,7 +29,12 @@ class _HomeState extends State<Home> {
         //The TopBar Widget will handel the size
         preferredSize: Size.fromHeight(45),
         child: TopBar(
-          leading: new Icon(Icons.camera_alt),
+          leading: new IconButton(
+            onPressed: (){
+              selectImage(true, context, widget.appData);
+            },
+            icon: Icon(Icons.camera_alt),
+          ),
           title: new Text("Fluttergram"),
         ),
       ),
