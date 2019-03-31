@@ -240,16 +240,17 @@ Future selectImage(bool fromCamera, BuildContext context, Data appData) async {
     source: (fromCamera) ? ImageSource.camera : ImageSource.gallery,
   );
 
-  //navigate to the page where we plugin our caption
-  Navigator.push(
-    context,
-    MaterialPageRoute(
-      builder: (context) => NewOrEditPost(
-        appData: appData, 
-        isNew: true,
-        newImage: image,
+  if(image != null){
+    //navigate to the page where we plugin our caption
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => NewOrEditPost(
+          appData: appData, 
+          isNew: true,
+          newImage: image,
+        ),
       ),
-    ),
-  );
-  
+    );
+  }
 }

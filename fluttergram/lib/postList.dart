@@ -4,6 +4,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:fluttergram/comments.dart';
 import 'package:fluttergram/main.dart';
+import 'package:fluttergram/newOrEdit.dart';
 import 'package:fluttergram/shared.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 
@@ -230,7 +231,18 @@ class _PostState extends State<Post> {
   }
 
   Future editPost() async{
-    //widget.postID, widget.imageUrl, widget.caption
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => NewOrEditPost(
+          appData: widget.appData, 
+          isNew: false,
+          imageUrl: widget.imageUrl,
+          postID: widget.postID,
+          caption: widget.caption,
+        ),
+      ),
+    );
   }
 
   @override

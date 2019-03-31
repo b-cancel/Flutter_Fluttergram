@@ -2,22 +2,29 @@ import 'dart:io';
 
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
-import 'package:fluttergram/profile.dart';
 import 'package:fluttergram/shared.dart';
+
+import 'package:http/http.dart' as http;
 
 Dio dio = new Dio();
 
 class NewOrEditPost extends StatefulWidget {
   final Data appData;
   final bool isNew;
+  //is new == true
   final File newImage;
+  //is new == false
   final String imageUrl;
+  final int postID;
+  final String caption;
 
   NewOrEditPost({
     this.appData,
     this.isNew,
     this.newImage,
     this.imageUrl,
+    this.postID,
+    this.caption,
   });
 
   _NewOrEditPostState createState() => _NewOrEditPostState();
@@ -25,6 +32,14 @@ class NewOrEditPost extends StatefulWidget {
 
 class _NewOrEditPostState extends State<NewOrEditPost> {
   TextEditingController captionText = new TextEditingController();
+
+  @override
+  void initState() { 
+    super.initState();
+    if(widget.isNew == false){
+      captionText.text = widget.caption;
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -48,7 +63,7 @@ class _NewOrEditPostState extends State<NewOrEditPost> {
             ),
           )
           : new IconButton(
-            onPressed: () => print("finishing edit"),
+            onPressed: () => editPost(),
             icon: Icon(
               Icons.check,
               color: Colors.blue
@@ -63,11 +78,9 @@ class _NewOrEditPostState extends State<NewOrEditPost> {
             width: width,
             decoration: BoxDecoration(
               image: new DecorationImage(
-                colorFilter: new ColorFilter.mode(
-                  Colors.black.withOpacity(0.6), 
-                  BlendMode.dstATop,
-                ),
-                image: FileImage(widget.newImage),
+                image: (widget.isNew) 
+                ? FileImage(widget.newImage)
+                : new NetworkImage(widget.imageUrl),
                 fit: BoxFit.cover,
               ),
             ),
@@ -87,6 +100,27 @@ class _NewOrEditPostState extends State<NewOrEditPost> {
         ],
       ),
     );
+  }
+
+  void editPost() async{
+    //retreive data from server
+    var urlMod = widget.appData.url + "/api/v1/posts/" + widget.postID.toString();
+    urlMod += "?caption=" + captionText.text;
+
+    return await http.patch(
+      urlMod, 
+      headers: {HttpHeaders.authorizationHeader: "Bearer " + widget.appData.token}
+    ).then((response){
+      if(response.statusCode == 200){
+        print("update post success");
+        Navigator.of(context).pop();
+        //TODO... get the count of user posts... user likes... and user comments
+      }
+      else{ 
+        print(urlMod + " update post fail");
+        //TODO... trigger some visual error
+      }
+    });
   }
 
   void submitNewPost() async{

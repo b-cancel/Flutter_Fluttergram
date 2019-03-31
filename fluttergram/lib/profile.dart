@@ -436,15 +436,13 @@ class _UserProfilePageState extends State<UserProfilePage> {
 
   Widget bigIcon(bool fromCamera, dynamic icon){
     return Expanded(
-      child: GestureDetector(
-        onTap: () => changeImage(fromCamera),
-        child: FittedBox(
-          fit: BoxFit.fill,
-          child: Container(
-            padding: EdgeInsets.only(left: 4, right: 8, top: 4, bottom: 4),
-            child: Icon(
-              icon,
-            ),
+      child: FittedBox(
+        fit: BoxFit.fill,
+        child: Container(
+          padding: EdgeInsets.only(left: 4, right: 8, top: 4, bottom: 4),
+          child: IconButton(
+            onPressed: () => changeImage(fromCamera),
+            icon: Icon(icon),
           ),
         ),
       ),
@@ -456,41 +454,43 @@ class _UserProfilePageState extends State<UserProfilePage> {
       source: (fromCamera) ? ImageSource.camera : ImageSource.gallery,
     );
 
-    Navigator.of(context).pop();
+    if(image != null){
+      Navigator.of(context).pop();
 
-    var urlMod = widget.appData.url + "/api/v1/my_account/profile_image";
+      var urlMod = widget.appData.url + "/api/v1/my_account/profile_image";
 
-    FormData formData = new FormData.from({
-      "token": widget.appData.token,
-      "image": new UploadFileInfo(image, "profile.jpeg"),
-    });
-
-    var response = await dio.patch(
-      urlMod, 
-      options: Options(
-        method: "PATCH",
-        headers: {HttpHeaders.authorizationHeader: "Bearer " + widget.appData.token},
-      ),
-      data: formData,
-    );
-
-    if (response.statusCode == 200){
-      //retreive data from server
-      var urlMod = widget.appData.url + "/api/v1/my_account";
-      http.get(
-        urlMod, 
-        headers: {HttpHeaders.authorizationHeader: "Bearer " + widget.appData.token}
-      ).then((response){
-          if(response.statusCode == 200){ 
-            imageUrl.value = jsonDecode(response.body)["profile_image_url"];
-          }
-          else{ 
-            print(urlMod + " get profile fail");
-            //TODO... trigger some visual error
-          }
+      FormData formData = new FormData.from({
+        "token": widget.appData.token,
+        "image": new UploadFileInfo(image, "profile.jpeg"),
       });
+
+      var response = await dio.patch(
+        urlMod, 
+        options: Options(
+          method: "PATCH",
+          headers: {HttpHeaders.authorizationHeader: "Bearer " + widget.appData.token},
+        ),
+        data: formData,
+      );
+
+      if (response.statusCode == 200){
+        //retreive data from server
+        var urlMod = widget.appData.url + "/api/v1/my_account";
+        http.get(
+          urlMod, 
+          headers: {HttpHeaders.authorizationHeader: "Bearer " + widget.appData.token}
+        ).then((response){
+            if(response.statusCode == 200){ 
+              imageUrl.value = jsonDecode(response.body)["profile_image_url"];
+            }
+            else{ 
+              print(urlMod + " get profile fail");
+              //TODO... trigger some visual error
+            }
+        });
+      }
+      else print("Not Uploaded! " + response.toString());
     }
-    else print("Not Uploaded! " + response.toString());
   }
 
   //-------------------------BIO UPDATE CODE-------------------------
