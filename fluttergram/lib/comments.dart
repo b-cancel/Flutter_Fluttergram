@@ -163,6 +163,7 @@ class _CommentsState extends State<Comments> {
                     timeStamp: widget.postTimeStamp,
                     selectedMenuItem: widget.selectedMenuItem,
                     potentiallyEditable: false,
+                    commentID: -1,
                   ),
                 ),
                 FutureBuilder(
@@ -337,7 +338,7 @@ class _PostCommentState extends State<PostComment> {
         //TODO... get the count of user posts... user likes... and user comments
       }
       else{ 
-        print(urlMod + " get profile fail");
+        print(urlMod + " delete comment fail");
         //TODO... trigger some visual error
       }
     });
@@ -415,25 +416,10 @@ class _PostCommentState extends State<PostComment> {
           && widget.appData.currentUserID == widget.userID)
           ? PopupMenuButton(
             onSelected: (val){
-              if(val == "edit"){
-                print("editing " + widget.commentID.toString());
-              }
-              else deleteComment();
+              deleteComment();
             },
             itemBuilder: (BuildContext context){
               return [
-                PopupMenuItem<String>(
-                  value: "edit",
-                  child: Row(
-                    children: <Widget>[
-                      Icon(
-                        Icons.edit,
-                        size: 22,
-                      ),
-                      Text(" Edit"),
-                    ],
-                  ),
-                ),
                 PopupMenuItem<String>(
                   value: "delete",
                   child: Row(

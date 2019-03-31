@@ -203,6 +203,36 @@ class _PostState extends State<Post> {
     );
   }
 
+  bool alreadyDeleted = false;
+
+  Future deletePost() async{
+    //retreive data from server
+    var urlMod = widget.appData.url + "/api/v1/posts/" + widget.postID.toString();
+
+    return await http.delete(
+      urlMod, 
+      headers: {HttpHeaders.authorizationHeader: "Bearer " + widget.appData.token}
+    ).then((response){
+      if(response.statusCode == 200){
+        //hide comment on the client
+        alreadyDeleted = true;
+        print("already deleted now set to TRUE");
+        Future.delayed(Duration(milliseconds: 250),(){
+          setState(() {});
+        });
+        //TODO... get the count of user posts... user likes... and user comments
+      }
+      else{ 
+        print(urlMod + " delete post fail");
+        //TODO... trigger some visual error
+      }
+    });
+  }
+
+  Future editPost() async{
+    //widget.postID, widget.imageUrl, widget.caption
+  }
+
   @override
   Widget build(BuildContext context) {
     var size = MediaQuery.of(context).size.width;
@@ -225,7 +255,9 @@ class _PostState extends State<Post> {
       );
     }
 
-    return Column(
+    return (alreadyDeleted)
+    ? Container()
+    : Column(
       mainAxisAlignment: MainAxisAlignment.start,
       mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -241,15 +273,44 @@ class _PostState extends State<Post> {
                 widget.selectedMenuItem, 
                 reload: widget.appData.whoOwnsPostsID == widget.postOwnerID,
               ),
-              (showOptions)
-              ? Padding(
-                padding: EdgeInsets.fromLTRB(0, 8, 8, 8),
-                child: new IconButton(
-                  icon: Icon(Icons.more_vert),
-                  onPressed: null,
-                ),
+              //---
+              (widget.appData.currentUserID == widget.postOwnerID)
+              ? PopupMenuButton(
+                onSelected: (val){
+                  if(val == "edit") editPost();
+                  else deletePost();
+                },
+                itemBuilder: (BuildContext context){
+                  return [
+                    PopupMenuItem<String>(
+                      value: "edit",
+                      child: Row(
+                        children: <Widget>[
+                          Icon(
+                            Icons.edit,
+                            size: 22,
+                          ),
+                          Text(" Edit"),
+                        ],
+                      ),
+                    ),
+                    PopupMenuItem<String>(
+                      value: "delete",
+                      child: Row(
+                        children: <Widget>[
+                          Icon(
+                            FontAwesomeIcons.trashAlt,
+                            size: 22,
+                          ),
+                          Text(" Delete"),
+                        ],
+                      ),
+                    ),
+                  ];
+                },
               )
-              : Container()
+              : Container(),
+              //---
             ],
           ),
         ),
