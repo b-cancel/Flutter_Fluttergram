@@ -61,14 +61,14 @@ class _LoginPageState extends State<LoginPage> {
       text: TextSpan(
         children: [
           TextSpan(
-            text: (login.value == false) ? "Don't have an account?" : "Already have an account?",
+            text: (login.value) ? "Don't have an account?" : "Already have an account?",
             style: TextStyle(
               color: Colors.grey,
               fontSize: 12,
             ),
           ),
           TextSpan(
-            text: (login.value == false) ? " Sign up." : " Log in.",
+            text: (login.value) ? " Sign up." : " Log in.",
             style: TextStyle(
               fontWeight: FontWeight.bold,
               color: Color.fromARGB(255, 38, 38, 38),
@@ -81,8 +81,8 @@ class _LoginPageState extends State<LoginPage> {
   }
 
   String action(){
-    if(login.value) return "Login";
-    else return "Sign Up";
+    if(login.value) return "Log in";
+    else return "Sign up";
   }
 
   void submitAction(){

@@ -296,15 +296,22 @@ class _UserProfilePageState extends State<UserProfilePage> {
                           animation: imageUrl,
                           builder: (context, child){
                             return Container(
+                              height: (widget.editable) ? 100 : 75,
+                              width: (widget.editable) ? 100 : 75,
                               decoration: BoxDecoration(
-                                image: DecorationImage(
-                                  image: new NetworkImage(imageUrl.value),
-                                  fit: BoxFit.cover,
-                                ),
                                 borderRadius: BorderRadius.circular(100.0),
                                 border: Border.all(
                                   color: Colors.black,
                                   width: 1.0,
+                                ),
+                              ),
+                              child: ClipOval(
+                                child: FadeInImage(
+                                  fit: BoxFit.cover,
+                                  placeholder: const AssetImage('assets/profilePlaceholder.png'),
+                                  image: new NetworkImage(
+                                    imageUrl.value,
+                                  ),
                                 ),
                               ),
                             );
@@ -455,7 +462,7 @@ class _UserProfilePageState extends State<UserProfilePage> {
     );
 
     if(image != null){
-      Navigator.of(context).pop();
+      //Navigator.of(context).pop();
 
       var urlMod = widget.appData.url + "/api/v1/my_account/profile_image";
 

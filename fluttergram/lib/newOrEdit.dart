@@ -80,7 +80,13 @@ class _NewOrEditPostState extends State<NewOrEditPost> {
               image: new DecorationImage(
                 image: (widget.isNew) 
                 ? FileImage(widget.newImage)
-                : new NetworkImage(widget.imageUrl),
+                : FadeInImage(
+                  fit: BoxFit.cover,
+                  placeholder: const AssetImage('assets/imagePlaceholder.png'),
+                  image: new NetworkImage(
+                    widget.imageUrl,
+                  ),
+                ),
                 fit: BoxFit.cover,
               ),
             ),

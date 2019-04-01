@@ -251,8 +251,11 @@ class _CommentsState extends State<Comments> {
                               width: 35.0,
                               decoration: new BoxDecoration(
                                 shape: BoxShape.circle,
-                                image: new DecorationImage(
-                                  fit: BoxFit.fill,
+                              ),
+                              child: ClipOval(
+                                child: FadeInImage(
+                                  fit: BoxFit.cover,
+                                  placeholder: const AssetImage('assets/profilePlaceholder.png'),
                                   image: new NetworkImage(
                                     imageUrl,
                                   ),
@@ -358,14 +361,17 @@ class _PostCommentState extends State<PostComment> {
           InkWell(
             onTap: () => goToThisUsersProfile(),
             child: Container(
-              height: 40.0,
-              width: 40.0,
+              height: 35.0,
+              width: 35.0,
               decoration: new BoxDecoration(
                 shape: BoxShape.circle,
-                image: new DecorationImage(
-                  fit: BoxFit.fill,
+              ),
+              child: ClipOval(
+                child: FadeInImage(
+                  fit: BoxFit.cover,
+                  placeholder: const AssetImage('assets/profilePlaceholder.png'),
                   image: new NetworkImage(
-                    widget.imageUrl,
+                    widget.imageUrl
                   ),
                 ),
               ),

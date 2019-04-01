@@ -331,9 +331,12 @@ class _PostState extends State<Post> {
           child: Container(
             height: size,
             width: size,
-            child: new Image.network(
-              widget.imageUrl,
+            child: FadeInImage(
               fit: BoxFit.cover,
+              placeholder: const AssetImage('assets/imagePlaceholder.png'),
+              image: new NetworkImage(
+                widget.imageUrl
+              ),
             ),
           ),
         ),
@@ -531,15 +534,18 @@ class ProfileLink extends StatelessWidget {
       padding: EdgeInsets.all(8),
       child: Row(
         children: <Widget>[
-          new Container(
+          Container(
             height: 40.0,
             width: 40.0,
             decoration: new BoxDecoration(
               shape: BoxShape.circle,
-              image: new DecorationImage(
-                fit: BoxFit.fill,
+            ),
+            child: ClipOval(
+              child: FadeInImage(
+                fit: BoxFit.cover,
+                placeholder: const AssetImage('assets/profilePlaceholder.png'),
                 image: new NetworkImage(
-                  postOwnerImageUrl,
+                  postOwnerImageUrl
                 ),
               ),
             ),
