@@ -17,4 +17,5 @@ This is why the demo is slow.
 <br>
 Everyone in class was testing and recording their demo at the same time. The server was under too much load.
 <br>
+<br>
 <a href="https://github.com/ericmichael/sinatra-new-instagram">Server Side Code Link</a>
