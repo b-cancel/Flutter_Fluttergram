@@ -51,8 +51,6 @@ The server was under too much load.
 <br>
 <img src="https://drive.google.com/uc?export=download&id=1_g6F7VL_EKi7eZinUBRxSA94By1yE4D8"/>
 <br>
-<img src="https://drive.google.com/uc?export=download&id=1_g6F7VL_EKi7eZinUBRxSA94By1yE4D8"/>
-<br>
 <img src="https://drive.google.com/uc?export=download&id=1YIr5JYVSZZvQydZFCiyGBVSJt-HKSP6i"/>
 <br>
 <img src="https://drive.google.com/uc?export=download&id=1VyIpaS0KS4zeSqyaAsQsiChPDRTaEoYA"/>
