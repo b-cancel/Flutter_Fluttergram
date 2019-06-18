@@ -37,7 +37,7 @@ The server was under too much load.
 <br>
 *The accounts and photos might belong to other students
 <br>
-<img src="https://drive.google.com/open?id=1KFrU95M2OVmlcFtKyKC2XLxUE22cjHrC"/>
+<img src="https://drive.google.com/file/d/1KFrU95M2OVmlcFtKyKC2XLxUE22cjHrC/view?usp=sharing"/>
 <br>
 <img src="https://drive.google.com/open?id=1zn2DRmqGUQzbNguFTW8bzlXOALNLEWEk"/>
 <br>
